@@ -1,0 +1,1707 @@
+<!doctype html><html lang="hi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0A0B1A"><meta name="mobile-web-app-capable" content="yes"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" type="image/png" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png"><style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Sudoku</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Sora:wght@600;700&display=swap">
+<style>
+/* Layout: midnight messenger. You are rose or crimson, they are blue. Floating header pill, thread on a soft aurora wallpaper, glass composer, full-screen viewer and editor, bottom-sheet settings. */
+:root {
+  --bg: #0A0B1A;
+  --bg-2: #12142E;
+  --surface: #171936;
+  --surface-2: #212450;
+  --line: #2D3162;
+  --fg: #EEF0FF;
+  --muted: #9FA4D1;
+  --accent: #FF6B9C;
+  --accent-fg: #2A0714;
+  --me-a: #D4246B;
+  --me-b: #9C0F3F;
+  --you-a: #3B74FF;
+  --you-b: #1E46C8;
+  --on-bubble: #FFFFFF;
+  --glow-a: rgba(255, 60, 130, .16);
+  --glow-b: rgba(60, 110, 255, .18);
+  --danger: #FF7A7A;
+  --ok: #7BD9AE;
+  --v-bg: #05060F;
+  --v-fg: #EEF0FF;
+  --v-line: rgba(255, 255, 255, .28);
+  --font-body: 'Manrope', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-brand: 'Sora', 'Manrope', system-ui, sans-serif;
+  color-scheme: dark;
+}
+:root[data-me="red"] { --me-a: #E0343F; --me-b: #A0101F; }
+:root[data-wall="neel"] { --bg: #06141F; --bg-2: #0B2233; --surface: #0F2536; --surface-2: #163549; --line: #1F4660; --glow-a: rgba(0, 210, 200, .13); --glow-b: rgba(60, 110, 255, .2); }
+:root[data-wall="gulaab"] { --bg: #1A0913; --bg-2: #2A0F1E; --surface: #321325; --surface-2: #451A33; --line: #5C2442; --glow-a: rgba(255, 80, 130, .22); --glow-b: rgba(255, 160, 90, .1); }
+:root[data-wall="saaf"] { --bg: #0D0E1B; --glow-a: transparent; --glow-b: transparent; }
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #F4F2FB; --bg-2: #EAE6F7; --surface: #FFFFFF; --surface-2: #EBE8F8; --line: #D8D2EE;
+    --fg: #1B1840; --muted: #625E8F; --accent: #C21E5C; --accent-fg: #FFFFFF;
+    --glow-a: rgba(255, 60, 130, .10); --glow-b: rgba(60, 110, 255, .12);
+    --danger: #C13B3B; --ok: #1F7A55;
+    color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #F4F2FB; --bg-2: #EAE6F7; --surface: #FFFFFF; --surface-2: #EBE8F8; --line: #D8D2EE;
+  --fg: #1B1840; --muted: #625E8F; --accent: #C21E5C; --accent-fg: #FFFFFF;
+  --glow-a: rgba(255, 60, 130, .10); --glow-b: rgba(60, 110, 255, .12);
+  --danger: #C13B3B; --ok: #1F7A55;
+  color-scheme: light;
+}
+
+html, body { height: 100%; }
+body {
+  margin: 0;
+  box-sizing: border-box;
+  background:
+    radial-gradient(70% 45% at 100% 100%, var(--glow-a), transparent 70%),
+    radial-gradient(60% 40% at 0% 0%, var(--glow-b), transparent 70%),
+    var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  overflow-x: hidden;
+}
+body.veil #lock, body.veil #chat, body.veil #home { filter: blur(24px); }
+button, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ico { display: inline-grid; place-items: center; flex: none; }
+.screen { height: 100%; box-sizing: border-box; }
+
+/* ---------- buttons ---------- */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; padding: 0 20px; border-radius: 16px; border: 1px solid transparent; font-weight: 700; }
+.btn.grad { background: linear-gradient(135deg, var(--me-a), var(--me-b)); color: var(--on-bubble); box-shadow: 0 10px 24px -12px var(--me-a); }
+.btn.ghost { background: transparent; border-color: var(--line); color: var(--fg); }
+.btn.sm { min-height: 38px; padding: 0 16px; border-radius: 12px; font-size: 14px; }
+.btn.wide { width: 100%; }
+.btn:disabled { opacity: .5; cursor: default; }
+.ib { width: 40px; height: 40px; border-radius: 50%; border: 0; background: transparent; color: var(--muted); display: grid; place-items: center; flex: none; }
+.ib:hover { color: var(--fg); background: var(--surface-2); }
+.ib.rec { color: var(--on-bubble); background: var(--me-a); }
+
+/* ---------- lock ---------- */
+#lock { display: flex; flex-direction: column; overflow-y: auto; }
+.lock-card { width: 100%; max-width: 380px; margin: auto; padding-block: 28px; box-sizing: border-box; min-width: 0; }
+.duo { display: block; margin-bottom: 14px; }
+.brand { font-family: var(--font-brand); font-weight: 700; font-size: 2.4rem; letter-spacing: -0.03em; margin: 0 0 6px; background: linear-gradient(90deg, var(--me-a), var(--you-a)); -webkit-background-clip: text; background-clip: text; color: transparent; width: fit-content; }
+.tag { margin: 0 0 26px; color: var(--muted); }
+label.lbl { display: block; font-size: 12px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+.code-row { display: flex; gap: 8px; }
+.code-row input { flex: 1; min-width: 0; height: 50px; box-sizing: border-box; border-radius: 16px; border: 1px solid var(--line); background: var(--surface); padding: 0 16px; font-size: 16px; letter-spacing: .04em; outline: none; }
+.code-row input:focus { border-color: var(--accent); }
+.check { display: flex; align-items: center; gap: 10px; margin: 14px 0 18px; color: var(--muted); font-size: 14px; }
+.check input { width: 18px; height: 18px; accent-color: var(--me-a); }
+.note { min-height: 20px; margin: 12px 0 0; font-size: 13.5px; color: var(--muted); }
+.note.bad { color: var(--danger); }
+details { margin-top: 22px; border-top: 1px solid var(--line); padding-top: 14px; }
+summary { cursor: pointer; font-weight: 700; font-size: 14px; }
+details ol { margin: 10px 0 0; padding-left: 20px; color: var(--muted); font-size: 14px; display: grid; gap: 6px; }
+.legend { list-style: none; margin: 24px 0 0; padding: 0; display: grid; gap: 14px; }
+.legend li { display: flex; gap: 12px; align-items: flex-start; }
+.legend .ico { width: 34px; height: 34px; border-radius: 11px; background: var(--surface-2); color: var(--accent); }
+.legend b { display: block; font-size: 14.5px; }
+.legend span.s { color: var(--muted); font-size: 13.5px; }
+
+/* ---------- chat ---------- */
+#chat { display: flex; flex-direction: column; }
+.head { display: flex; align-items: center; gap: 10px; margin-top: 10px; padding: 8px 8px 8px 10px; border-radius: 24px; background: var(--surface); border: 1px solid var(--line); }
+.avatar { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; flex: none; font-family: var(--font-brand); font-weight: 700; color: var(--on-bubble); background: linear-gradient(135deg, var(--you-a), var(--you-b)); box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--you-a); }
+.who { flex: 1; min-width: 0; margin-left: 4px; }
+.who b { display: block; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.who span { display: block; color: var(--muted); font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.who span.on { color: var(--ok); }
+.streak { display: inline-flex; align-items: center; gap: 4px; height: 30px; padding: 0 10px; border-radius: 999px; background: linear-gradient(135deg, var(--me-a), var(--me-b)); color: var(--on-bubble); font-weight: 700; font-size: 13px; flex: none; }
+.banner { margin: 10px 0 0; padding: 10px 14px; border-radius: 14px; background: var(--surface-2); font-size: 13.5px; }
+.banner.warn { border: 1px solid var(--danger); }
+
+#list { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 6px; padding: 14px 0; }
+.day { align-self: center; margin: 8px 0; padding: 3px 12px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); color: var(--muted); font-size: 12px; font-weight: 700; }
+.row { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-width: 0; }
+.row.mine { align-items: flex-end; }
+.bubble { max-width: min(80%, 420px); box-sizing: border-box; border: 0; text-align: left; border-radius: 22px; padding: 10px 15px; overflow-wrap: anywhere; white-space: pre-wrap; color: var(--on-bubble); }
+.row.mine .bubble { background: linear-gradient(135deg, var(--me-a), var(--me-b)); border-bottom-right-radius: 6px; box-shadow: 0 8px 20px -12px var(--me-a); }
+.row.theirs .bubble { background: linear-gradient(135deg, var(--you-a), var(--you-b)); border-bottom-left-radius: 6px; box-shadow: 0 8px 20px -12px var(--you-a); }
+.bubble.photo { padding: 4px; white-space: normal; }
+.bubble.photo img { display: block; max-width: 100%; max-height: 320px; border-radius: 18px; }
+.bubble.photo .cap { display: block; padding: 6px 10px 4px; white-space: pre-wrap; }
+.bubble.lockedmsg { background: var(--surface-2) !important; color: var(--muted); box-shadow: none !important; display: inline-flex; gap: 8px; align-items: center; }
+.quote { display: block; width: 100%; box-sizing: border-box; text-align: left; border: 0; border-radius: 14px; padding: 6px 10px; margin-bottom: 6px; background: rgba(255, 255, 255, .18); color: inherit; font-size: 12.5px; }
+.quote b { display: block; font-size: 11.5px; opacity: .85; }
+.quote span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rx { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 8px; margin-top: -8px; position: relative; }
+.rxp { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 1px 8px; font-size: 12.5px; }
+.rxp.mine { border-color: var(--accent); }
+.meta { font-size: 11.5px; color: var(--muted); padding: 0 6px; }
+.tile { display: flex; align-items: center; gap: 12px; max-width: min(80%, 340px); box-sizing: border-box; padding: 11px 16px; border-radius: 22px; border: 1.5px solid transparent; text-align: left; min-width: 0; color: var(--fg);
+  background: linear-gradient(var(--surface), var(--surface)) padding-box, linear-gradient(135deg, var(--me-a), var(--you-a)) border-box; }
+.tile .ico { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--me-a), var(--you-a)); color: var(--on-bubble); }
+.tile b { display: block; font-size: 14.5px; }
+.tile span.s { display: block; color: var(--muted); font-size: 12.5px; }
+button.tile.live { animation: ember 2.6s ease-in-out infinite; }
+@keyframes ember { 0%, 100% { box-shadow: 0 0 0 0 transparent; } 50% { box-shadow: 0 0 22px 0 color-mix(in srgb, var(--you-a) 38%, transparent); } }
+.gone { align-self: center; display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); color: var(--muted); font-size: 12.5px; }
+.empty { margin: auto; max-width: 320px; text-align: center; color: var(--muted); }
+.empty b { display: block; color: var(--fg); font-family: var(--font-brand); font-size: 1.15rem; margin-bottom: 6px; }
+.empty ul { list-style: none; margin: 18px 0 0; padding: 0; display: grid; gap: 10px; text-align: left; font-size: 13.5px; }
+.empty li strong { color: var(--fg); }
+
+.tray { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding-top: 8px; }
+.chip { display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); font-size: 13px; font-weight: 700; color: var(--muted); }
+.chip[aria-pressed="true"] { background: linear-gradient(135deg, var(--me-a), var(--me-b)); border-color: transparent; color: var(--on-bubble); }
+.thumb, .replybar { display: inline-flex; align-items: center; gap: 8px; max-width: 100%; box-sizing: border-box; padding: 3px 6px 3px 3px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+.replybar { padding: 6px 6px 6px 12px; }
+.replybar span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.thumb img { width: 34px; height: 34px; border-radius: 9px; object-fit: cover; display: block; }
+.thumb button, .replybar button { width: 26px; height: 26px; border: 0; border-radius: 50%; background: transparent; color: var(--muted); display: grid; place-items: center; flex: none; }
+.composer { display: flex; align-items: flex-end; gap: 8px; padding: 8px 0 12px; }
+.field { flex: 1; min-width: 0; display: flex; align-items: flex-end; background: var(--surface); border: 1px solid var(--line); border-radius: 26px; padding: 3px 4px 3px 16px; }
+.field:focus-within { border-color: var(--accent); }
+.field textarea { flex: 1; min-width: 0; border: 0; background: transparent; resize: none; outline: none; font-size: 16px; line-height: 1.4; max-height: 120px; padding: 10px 0; }
+.field .ib { width: 38px; height: 38px; }
+.send { width: 48px; height: 48px; border-radius: 50%; border: 0; background: linear-gradient(135deg, var(--me-a), var(--me-b)); color: var(--on-bubble); display: grid; place-items: center; flex: none; box-shadow: 0 10px 22px -10px var(--me-a); }
+
+/* ---------- viewer ---------- */
+#viewer { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; gap: 14px; box-sizing: border-box; background: var(--v-bg); color: var(--v-fg);
+  padding: calc(env(safe-area-inset-top, 0px) + 12px) max(16px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 16px) max(16px, env(safe-area-inset-left, 0px)); }
+.v-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 13.5px; }
+.v-top .ib { color: var(--v-fg); }
+.v-top .ib:hover { background: rgba(255, 255, 255, .12); color: var(--v-fg); }
+.v-bar { height: 3px; border-radius: 2px; background: rgba(255, 255, 255, .18); overflow: hidden; }
+.v-bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--me-a), var(--you-a)); transform-origin: left; animation: drain 12s linear forwards; }
+@keyframes drain { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+.v-body { flex: 1; min-height: 0; display: grid; place-items: center; overflow: auto; }
+.v-body img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 14px; }
+.v-text { font-family: var(--font-brand); font-size: clamp(1.3rem, 5vw, 1.9rem); line-height: 1.35; max-width: 30ch; text-align: center; overflow-wrap: anywhere; white-space: pre-wrap; }
+.v-cap { margin-top: 12px; text-align: center; white-space: pre-wrap; overflow-wrap: anywhere; }
+.v-actions { display: grid; gap: 10px; }
+.v-actions .btn { width: 100%; }
+.v-actions .btn.ghost { border-color: var(--v-line); color: var(--v-fg); }
+.v-actions .btn.danger { background: transparent; border-color: var(--danger); color: var(--danger); }
+
+/* ---------- editor ---------- */
+#editor { position: fixed; inset: 0; z-index: 55; display: flex; flex-direction: column; gap: 10px; box-sizing: border-box; background: var(--v-bg); color: var(--v-fg);
+  padding: calc(env(safe-area-inset-top, 0px) + 10px) max(14px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 12px) max(14px, env(safe-area-inset-left, 0px)); }
+.ed-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.ed-top .btn.ghost { border-color: var(--v-line); color: var(--v-fg); }
+.ed-stage { flex: 1; min-height: 0; display: grid; place-items: center; }
+#edCanvas { max-width: 100%; max-height: 100%; border-radius: 14px; touch-action: none; background: #000; }
+.ed-tools { display: grid; gap: 8px; }
+.ed-row { display: flex; gap: 8px; overflow-x: auto; align-items: center; padding-bottom: 2px; }
+.ed-row .chip { background: rgba(255, 255, 255, .08); border-color: var(--v-line); color: var(--v-fg); flex: none; }
+.ed-row .chip[aria-pressed="true"] { background: linear-gradient(135deg, var(--me-a), var(--me-b)); border-color: transparent; }
+.sw { width: 30px; height: 30px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .4); flex: none; padding: 0; }
+.sw[aria-pressed="true"] { border-color: #fff; box-shadow: 0 0 0 2px var(--me-a); }
+#edText { flex: 1; min-width: 0; height: 40px; border-radius: 12px; border: 1px solid var(--v-line); background: rgba(255, 255, 255, .08); color: var(--v-fg); padding: 0 12px; font-size: 16px; }
+
+/* ---------- pin ---------- */
+#pin { position: fixed; inset: 0; z-index: 90; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center; box-sizing: border-box; padding: 24px 16px;
+  background: radial-gradient(70% 45% at 100% 100%, var(--glow-a), transparent 70%), radial-gradient(60% 40% at 0% 0%, var(--glow-b), transparent 70%), var(--bg); }
+#pin h2 { margin: 0; font-family: var(--font-brand); font-size: 1.4rem; }
+#pin p { margin: 0; min-height: 20px; color: var(--muted); font-size: 14px; }
+.dots { display: flex; gap: 14px; margin: 6px 0 10px; }
+.dots i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--muted); }
+.dots i.f { background: linear-gradient(135deg, var(--me-a), var(--you-a)); border-color: transparent; }
+.pad { display: grid; grid-template-columns: repeat(3, 68px); gap: 14px; }
+.pad button { width: 68px; height: 68px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); font-size: 1.5rem; font-weight: 600; font-family: var(--font-brand); display: grid; place-items: center; }
+.pad button.empty { visibility: hidden; }
+.linkbtn { border: 0; background: transparent; color: var(--muted); font-weight: 600; padding: 10px; }
+.shake { animation: shake .3s; }
+@keyframes shake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+
+/* ---------- sheet, toast, decoy ---------- */
+#sheet { position: fixed; inset: 0; z-index: 60; display: flex; align-items: flex-end; justify-content: center; background: rgba(4, 6, 16, .6); }
+.sheet-panel { width: 100%; max-width: 480px; max-height: 88%; overflow-y: auto; box-sizing: border-box; background: var(--surface); border: 1px solid var(--line); border-radius: 26px 26px 0 0; padding: 12px 14px calc(env(safe-area-inset-bottom, 0px) + 14px); display: grid; gap: 6px; animation: rise .18s ease-out; }
+@keyframes rise { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+.sheet-title { margin: 6px 6px 2px; color: var(--muted); font-size: 13px; font-weight: 700; }
+.sheet-item { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 0 12px; border: 0; border-radius: 14px; background: transparent; text-align: left; font-weight: 600; }
+.sheet-item:hover { background: var(--surface-2); }
+.sheet-item.danger { color: var(--danger); }
+.sheet-item.cancel { color: var(--muted); justify-content: center; }
+.rxrow { display: flex; justify-content: space-between; gap: 6px; padding: 4px; }
+.rxbtn { width: 46px; height: 46px; border-radius: 50%; border: 0; background: var(--surface-2); font-size: 1.35rem; line-height: 1; }
+.grp { display: grid; gap: 8px; padding: 6px 4px; }
+.grp > label { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.seg { display: flex; gap: 8px; flex-wrap: wrap; }
+.seg button { flex: 1; min-width: 0; min-height: 40px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); font-weight: 600; font-size: 14px; }
+.seg button[aria-pressed="true"] { background: linear-gradient(135deg, var(--me-a), var(--me-b)); border-color: transparent; color: var(--on-bubble); }
+.walls { display: flex; gap: 10px; }
+.wallsw { width: 54px; height: 54px; border-radius: 16px; border: 2px solid var(--line); padding: 0; }
+.wallsw[aria-pressed="true"] { border-color: var(--accent); }
+.fine { margin: 4px 6px 0; color: var(--muted); font-size: 12.5px; }
+#toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 90px); transform: translateX(-50%); z-index: 95; max-width: calc(100% - 32px); box-sizing: border-box; padding: 10px 16px; border-radius: 14px; background: var(--fg); color: var(--bg); font-size: 14px; font-weight: 600; text-align: center; }
+#decoy { position: fixed; inset: 0; z-index: 99; overflow: auto; background: #FBFAF6; color: #23221F; box-sizing: border-box;
+  padding: calc(env(safe-area-inset-top, 0px) + 24px) max(20px, env(safe-area-inset-right, 0px)) 40px max(20px, env(safe-area-inset-left, 0px)); font-family: var(--font-body); }
+.sd-wrap { max-width: 420px; margin: 0 auto; }
+#decoy h2 { font-size: 1.5rem; margin: 0 0 12px; user-select: none; font-weight: 700; }
+.sd-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+.sd-lvls { display: flex; gap: 6px; }
+.sd-lvls button { border: 1px solid #CFCAC0; background: #fff; color: #23221F; border-radius: 999px; padding: 6px 14px; font-size: 13px; font-weight: 600; }
+.sd-lvls button[aria-pressed="true"] { background: #23221F; color: #FBFAF6; border-color: #23221F; }
+.sd-time { color: #77746C; font-size: 14px; font-variant-numeric: tabular-nums; }
+.sd-grid { display: grid; grid-template-columns: repeat(9, 1fr); grid-template-rows: repeat(9, 1fr); border: 2px solid #23221F; background: #fff; aspect-ratio: 1; }
+.sd-cell { min-width: 0; padding: 0; border: 0; border-right: 1px solid #D8D3C8; border-bottom: 1px solid #D8D3C8; background: #fff; color: #2F6BFF; font-size: clamp(16px, 5.4vw, 24px); font-weight: 500; font-family: inherit; display: grid; place-items: center; }
+.sd-cell.g { color: #23221F; font-weight: 700; }
+.sd-cell.c3 { border-right: 2px solid #23221F; }
+.sd-cell.r3 { border-bottom: 2px solid #23221F; }
+.sd-cell.rel { background: #F1EEE6; }
+.sd-cell.same { background: #E3E8FF; }
+.sd-cell.sel { background: #CBD7FF; }
+.sd-cell.bad { color: #D14343; background: #FDE8E8; }
+.sd-msg { min-height: 20px; margin: 10px 0; color: #4A4840; font-size: 14px; text-align: center; }
+.sd-pad { display: grid; grid-template-columns: repeat(9, 1fr); gap: 5px; }
+.sd-pad button, .sd-acts button { border: 1px solid #CFCAC0; background: #fff; color: #23221F; border-radius: 10px; min-height: 44px; font-size: 1.1rem; font-weight: 600; padding: 0; font-family: inherit; }
+.sd-acts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; }
+.sd-acts button { font-size: 14px; }
+.sd-pad button:disabled { opacity: .3; }
+
+.txt { width: 100%; box-sizing: border-box; height: 50px; border-radius: 16px; border: 1px solid var(--line); background: var(--surface); padding: 0 16px; font-size: 16px; outline: none; }
+.txt:focus { border-color: var(--accent); }
+.lbl2 { margin-top: 16px; }
+.btn.ghost.wide { margin-top: 10px; }
+#home { display: flex; flex-direction: column; overflow-y: auto; }
+.home-top { display: flex; align-items: center; gap: 8px; padding: 18px 0 8px; }
+.home-top .ttl { flex: 1; min-width: 0; }
+.home-top .brand { font-size: 1.8rem; margin: 0; }
+.home-top .tag { margin: 2px 0 0; font-size: 13.5px; }
+.chat-list { flex: 1; display: flex; flex-direction: column; gap: 10px; padding: 12px 0; }
+.crow { display: flex; align-items: center; gap: 4px; padding: 4px 4px 4px 6px; border-radius: 22px; background: var(--surface); border: 1px solid var(--line); }
+.copen { flex: 1; min-width: 0; display: flex; align-items: center; gap: 14px; border: 0; background: transparent; text-align: left; padding: 8px; border-radius: 18px; }
+.cav { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; flex: none; font-family: var(--font-brand); font-weight: 700; color: var(--on-bubble); background: linear-gradient(135deg, var(--me-a), var(--you-a)); }
+.cinfo { min-width: 0; display: block; }
+.cinfo b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cinfo span { display: block; color: var(--muted); font-size: 12.5px; }
+.home-new { padding-bottom: 14px; }
+.sname { font-size: 11.5px; font-weight: 700; color: var(--muted); padding: 0 8px; }
+@media (prefers-reduced-motion: reduce) {
+  .sheet-panel, button.tile.live, .v-bar i, .shake { animation: none; }
+}
+</style>
+</head><body>
+
+<div id="lock" class="screen">
+  <div class="lock-card">
+    <svg class="duo" viewBox="0 0 84 48" width="84" height="48" aria-hidden="true">
+      <circle cx="28" cy="24" r="20" style="fill:var(--me-a)"/>
+      <circle cx="56" cy="24" r="20" style="fill:var(--you-a);mix-blend-mode:screen"/>
+      <g transform="translate(34.5 14.5)" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="8" width="13" height="10" rx="2.5"/><path d="M4 8V6a3.5 3.5 0 017 0v2"/></g>
+    </svg>
+    <h1 class="brand">sargoshi</h1>
+    <p class="tag">Chupke se baat. Ek ya kai logon ke saath.</p>
+    <form id="lockForm" autocomplete="off">
+      <label class="lbl" for="chatName">Chat ka naam</label>
+      <input id="chatName" class="txt" type="text" maxlength="30" placeholder="Jaise: Riya, Dosti group" autocomplete="off">
+      <p class="fine">Yeh naam sirf tumhare phone par dikhta hai.</p>
+      <label class="lbl lbl2" for="code">Secret code</label>
+      <div class="code-row">
+        <input id="code" type="password" placeholder="Dono ek hi code daalo" minlength="4" maxlength="40" autocomplete="off" autocapitalize="off" spellcheck="false">
+        <button id="peek" class="ib" type="button" aria-label="Code dikhao"></button>
+      </div>
+      <label class="check"><input id="remember" type="checkbox" checked> Code is phone par yaad rakho</label>
+      <button id="enter" class="btn grad wide" type="submit" disabled>Chat shuru karo</button>
+      <button id="backHome" class="btn ghost wide" type="button" hidden>Meri chats par wapas</button>
+      <p id="lockMsg" class="note" role="status"></p>
+    </form>
+    <details>
+      <summary>Chat ya group kaise banayein?</summary>
+      <ol>
+        <li>Ek secret code chuno aur jisse baat karni hai usse yahi code batao.</li>
+        <li>Use is app ka link bhejo. Sign in ki zarurat nahi hai.</li>
+        <li>Sab same secret code daalo. Do log: personal chat. Teen ya zyada: group.</li>
+      </ol>
+    </details>
+    <ul class="legend" id="legend"></ul>
+  </div>
+</div>
+
+<div id="home" class="screen" hidden>
+  <div class="home-top">
+    <div class="ttl"><h1 class="brand">sargoshi</h1><p class="tag">Meri chats</p></div>
+    <button id="homeHide" class="ib" type="button" aria-label="App chhupao"></button>
+    <button id="homeMore" class="ib" type="button" aria-label="Settings"></button>
+  </div>
+  <div id="chatList" class="chat-list"></div>
+  <div class="home-new"><button id="newChat" class="btn grad wide" type="button">Nayi chat ya group</button></div>
+</div>
+
+<div id="chat" class="screen" hidden>
+  <header class="head">
+    <button id="backBtn" class="ib" type="button" aria-label="Meri chats"></button>
+    <div class="avatar" id="avatar" aria-hidden="true">•</div>
+    <div class="who"><b id="whoName">Dost</b><span id="whoSub"></span></div>
+    <div class="streak" id="streak" hidden></div>
+    <button id="hideBtn" class="ib" type="button" aria-label="Chat chhupao"></button>
+    <button id="moreBtn" class="ib" type="button" aria-label="Settings"></button>
+  </header>
+  <div id="banner" class="banner" hidden></div>
+  <div id="loadNote" class="banner" hidden>Server se abhi jawab nahi mila. Jo dikh raha hai woh purana ho sakta hai.</div>
+  <main id="list" aria-live="polite"></main>
+  <div class="tray" id="tray"></div>
+  <div class="composer">
+    <div class="field">
+      <textarea id="msg" rows="1" placeholder="Message likho" aria-label="Message"></textarea>
+      <button id="micBtn" class="ib" type="button" aria-label="Bolkar likho" hidden></button>
+      <button id="photoBtn" class="ib" type="button" aria-label="Photo bhejo"></button>
+      <button id="camBtn" class="ib" type="button" aria-label="Camera se photo kheencho"></button>
+      <input id="pick" type="file" accept="image/*" hidden>
+      <input id="cam" type="file" accept="image/*" capture="environment" hidden>
+    </div>
+    <button id="sendBtn" class="send" type="button" aria-label="Bhejo"></button>
+  </div>
+</div>
+
+<div id="viewer" role="dialog" aria-modal="true" aria-label="Message dekho" hidden></div>
+
+<div id="editor" role="dialog" aria-modal="true" aria-label="Photo edit karo" hidden>
+  <div class="ed-top">
+    <button id="edCancel" class="btn ghost sm" type="button">Rehne do</button>
+    <button id="edDone" class="btn grad sm" type="button">Tayyar</button>
+  </div>
+  <div class="ed-stage"><canvas id="edCanvas"></canvas></div>
+  <div class="ed-tools">
+    <div class="ed-row" id="edTools"></div>
+    <div class="ed-row" id="edColors"></div>
+    <div class="ed-row" id="edFilters"></div>
+    <div class="ed-row" id="edTextRow" hidden><input id="edText" type="text" maxlength="60" placeholder="Likho, phir photo par tap karo" aria-label="Photo par likhna"></div>
+  </div>
+</div>
+
+<div id="pin" hidden>
+  <h2 id="pinTitle">PIN daalo</h2>
+  <p id="pinSub"></p>
+  <div id="pinDots" class="dots"></div>
+  <div id="pinPad" class="pad"></div>
+  <button id="pinAlt" class="linkbtn" type="button"></button>
+</div>
+
+<div id="sheet" hidden><div class="sheet-panel"></div></div>
+<div id="toast" role="status" hidden></div>
+<div id="decoy">
+  <div class="sd-wrap">
+    <h2 id="decoyTitle">Sudoku</h2>
+    <div class="sd-top"><div class="sd-lvls" id="sdLvls"></div><span id="sdTime" class="sd-time">00:00</span></div>
+    <div id="sdGrid" class="sd-grid"></div>
+    <p id="sdMsg" class="sd-msg"></p>
+    <div id="sdPad" class="sd-pad"></div>
+    <div class="sd-acts">
+      <button id="sdErase" type="button">Mitao</button>
+      <button id="sdHint" type="button">Hint</button>
+      <button id="sdCheck" type="button">Check</button>
+      <button id="sdNew" type="button">Naya</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var CFG = {
+    apiKey: "AIzaSyDMjNUbABnh5yd47BxwJmqHmA0qzaQ4JT0",
+    authDomain: "sudoko-appy.firebaseapp.com",
+    projectId: "sudoko-appy",
+    storageBucket: "sudoko-appy.firebasestorage.app",
+    messagingSenderId: "967650466094",
+    appId: "1:967650466094:web:7ce566695f521833d3c2bf"
+  };
+  var B = 'https://www.gstatic.com/firebasejs/10.14.1/';
+  var P = null;
+  function ctx() { return P || (P = init()); }
+  async function init() {
+    var m = await Promise.all([import(B + 'firebase-app.js'), import(B + 'firebase-auth.js'), import(B + 'firebase-firestore.js')]);
+    var A = m[0], Au = m[1], F = m[2];
+    var app = A.initializeApp(CFG);
+    var auth = Au.getAuth(app);
+    await auth.authStateReady();
+    if (!auth.currentUser) await Au.signInAnonymously(auth);
+    var fs;
+    try {
+      fs = F.initializeFirestore(app, { localCache: F.persistentLocalCache({ tabManager: F.persistentMultipleTabManager() }), ignoreUndefinedProperties: true, experimentalAutoDetectLongPolling: true });
+    } catch (e) {
+      fs = F.initializeFirestore(app, { ignoreUndefinedProperties: true, experimentalAutoDetectLongPolling: true });
+    }
+    return { F: F, fs: fs, uid: auth.currentUser.uid };
+  }
+  function wrap(s) { return { id: s.id, exists: s.exists(), data: function () { return s.data(); }, metadata: s.metadata }; }
+  function docApi(path) {
+    return {
+      get: async function () { var c = await ctx(); return wrap(await c.F.getDoc(c.F.doc(c.fs, path))); },
+      set: async function (d) { var c = await ctx(); await c.F.setDoc(c.F.doc(c.fs, path), d); },
+      update: async function (d) {
+        var c = await ctx(), o = {};
+        for (var k in d) {
+          if (k === 'rx' && d[k] && typeof d[k] === 'object') { for (var u in d[k]) o['rx.' + u] = d[k][u]; }
+          else o[k] = d[k];
+        }
+        await c.F.updateDoc(c.F.doc(c.fs, path), o);
+      },
+      delete: async function () { var c = await ctx(); await c.F.deleteDoc(c.F.doc(c.fs, path)); },
+      onSnapshot: function (cb, err) {
+        var off = null, dead = false;
+        ctx().then(function (c) {
+          if (dead) return;
+          off = c.F.onSnapshot(c.F.doc(c.fs, path), function (s) { cb(wrap(s)); }, function (e) { if (err) err(e); });
+        }).catch(function (e) { if (err) err(e); });
+        return function () { dead = true; if (off) off(); };
+      }
+    };
+  }
+  function colApi(path, cons) {
+    cons = cons || [];
+    return {
+      orderBy: function (f, d) { return colApi(path, cons.concat([['o', f, d || 'asc']])); },
+      limit: function (n) { return colApi(path, cons.concat([['l', n]])); },
+      add: async function (d) { var c = await ctx(); var r = await c.F.addDoc(c.F.collection(c.fs, path), d); return { id: r.id }; },
+      onSnapshot: function (cb, err) {
+        var off = null, dead = false;
+        ctx().then(function (c) {
+          if (dead) return;
+          var q = c.F.query.apply(null, [c.F.collection(c.fs, path)].concat(cons.map(function (x) { return x[0] === 'o' ? c.F.orderBy(x[1], x[2]) : c.F.limit(x[1]); })));
+          off = c.F.onSnapshot(q, function (s) { cb(s); }, function (e) { if (err) err(e); });
+        }).catch(function (e) { if (err) err(e); });
+        return function () { dead = true; if (off) off(); };
+      }
+    };
+  }
+  var dbApi = { doc: docApi, collection: colApi };
+
+  var names = new Map();
+  var userApi = {
+    me: async function () { var c = await ctx(); return { id: c.uid }; },
+    profiles: async function (ids) {
+      var c = await ctx(), out = {};
+      await Promise.all(ids.map(async function (id) {
+        if (!names.get(id)) {
+          try { var s = await c.F.getDoc(c.F.doc(c.fs, 'users/' + id)); names.set(id, s.exists() ? (s.data().name || '') : ''); }
+          catch (e) { names.set(id, ''); }
+        }
+        out[id] = { name: names.get(id) };
+      }));
+      return out;
+    }
+  };
+
+  // presence: one small doc per person in each chat, refreshed every 45 s while the app is open
+  var roomApi = {
+    join: async function (name) {
+      var c = await ctx(), F = c.F, uid = c.uid;
+      var path = 'rooms/' + name + '/presence';
+      var mine = F.doc(c.fs, path + '/' + uid);
+      var state = { on: false, typing: false }, docs = [], cb = null, alive = true;
+      function push() {
+        if (!alive || !cb) return;
+        var now = Date.now();
+        cb({ peers: docs.map(function (d) {
+          var age = now - (d.t || 0);
+          return { isMe: d.id === uid, kind: 'viewer', by: d.id, peer: d.id, presence: { on: d.on === true && age < 100000, typing: d.typing === true && age < 30000 } };
+        }) });
+      }
+      function write() { return alive ? F.setDoc(mine, { on: state.on, typing: state.typing, t: Date.now() }) : Promise.resolve(); }
+      var off = F.onSnapshot(F.collection(c.fs, path), function (s) {
+        docs = s.docs.map(function (x) { return Object.assign({ id: x.id }, x.data()); });
+        push();
+      }, function () {});
+      var hb = setInterval(function () { if (state.on) write().catch(function () {}); }, 45000);
+      var rc = setInterval(push, 15000);
+      return {
+        presence: async function (p) { Object.assign(state, p); await write(); },
+        onPeers: function (f) { cb = f; push(); },
+        leave: async function () {
+          alive = false; clearInterval(hb); clearInterval(rc); off();
+          try { await F.setDoc(mine, { on: false, typing: false, t: Date.now() }); } catch (e) {}
+        }
+      };
+    }
+  };
+
+  var dlApi = {
+    save: async function (r) {
+      var b = r.data instanceof Blob ? r.data : new Blob([r.data]);
+      var u = URL.createObjectURL(b), a = document.createElement('a');
+      a.href = u; a.download = r.filename; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(u); }, 4000);
+      return { status: 'saved' };
+    }
+  };
+
+  function dictation() {
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return null;
+    var rec = null, state = 'idle', L = { p: [], f: [], s: [] };
+    function st(x, reason) { state = x; L.s.forEach(function (f) { f({ state: x, reason: reason }); }); }
+    function sub(list) { return function (f) { list.push(f); return function () { var i = list.indexOf(f); if (i >= 0) list.splice(i, 1); }; }; }
+    return {
+      start: function () {
+        return new Promise(function (res, rej) {
+          if (rec) { res(); return; }
+          rec = new SR(); rec.lang = 'en-IN'; rec.continuous = true; rec.interimResults = true;
+          rec.onstart = function () { st('listening'); res(); };
+          rec.onresult = function (e) {
+            var interim = '';
+            for (var i = e.resultIndex; i < e.results.length; i++) {
+              var r = e.results[i];
+              if (r.isFinal) { L.f.forEach(function (f) { f({ text: ' ' + r[0].transcript.trim() }); }); L.p.forEach(function (f) { f({ text: '' }); }); }
+              else interim += r[0].transcript;
+            }
+            if (interim) L.p.forEach(function (f) { f({ text: interim }); });
+          };
+          rec.onerror = function (e) { rej({ code: (e.error === 'not-allowed' || e.error === 'service-not-allowed') ? 'not_granted' : 'upstream_error' }); };
+          rec.onend = function () { rec = null; st('idle', 'stopped'); };
+          st('starting');
+          try { rec.start(); } catch (e) { rec = null; st('idle'); rej({ code: 'upstream_error' }); }
+        });
+      },
+      stop: async function () { if (rec) rec.stop(); },
+      active: function () { return state !== 'idle'; },
+      onPartial: sub(L.p), onFinal: sub(L.f), onState: sub(L.s)
+    };
+  }
+
+  window.claude = {
+    use: async function (n) {
+      try {
+        if (n === 'dictation') return dictation();
+        if (n === 'downloads') return dlApi;
+        if (n === 'db' || n === 'user' || n === 'room') { await ctx(); return { db: dbApi, user: userApi, room: roomApi }[n]; }
+        return null;
+      } catch (e) { console.error(e); P = null; return null; }
+    }
+  };
+})();
+</script>
+<script>
+(() => {
+  'use strict';
+  const $ = (s, r = document) => r.querySelector(s);
+  const root = document.documentElement;
+
+  const ICON = {
+    lock: '<rect x="5" y="10" width="14" height="10" rx="2.5"/><path d="M8 10V8a4 4 0 018 0v2"/>',
+    camera: '<path d="M4 8h3l1.6-2.5h6.8L17 8h3a1 1 0 011 1v9a1 1 0 01-1 1H4a1 1 0 01-1-1V9a1 1 0 011-1z"/><circle cx="12" cy="13.5" r="3.6"/>',
+    image: '<rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.6"/><path d="M4 18l5.5-5 4 3.5 3-2.5L21 17"/>',
+    send: '<path d="M4.5 11.5L20 4.5l-5.5 15-2.8-6.2-7.2-1.8z"/><path d="M11.7 13.3L20 4.5"/>',
+    eye: '<path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/>',
+    eyeoff: '<path d="M3 3l18 18"/><path d="M10.6 5.6c.46-.07.93-.1 1.4-.1 6.4 0 10 6.5 10 6.5a17 17 0 01-3.2 4M6.5 7.2A17 17 0 002 12s3.6 6.5 10 6.5c1.5 0 2.8-.3 4-.8"/><path d="M9.9 9.9a2.6 2.6 0 003.7 3.7"/>',
+    more: '<circle cx="5" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="19" cy="12" r="1.5" fill="currentColor"/>',
+    close: '<path d="M6 6l12 12M18 6L6 18"/>',
+    save: '<path d="M7 4h10a1 1 0 011 1v15l-6-4-6 4V5a1 1 0 011-1z"/>',
+    trash: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
+    copy: '<rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2"/>',
+    out: '<path d="M10 5H6a2 2 0 00-2 2v10a2 2 0 002 2h4M14 8l4 4-4 4M18 12H9"/>',
+    flame: '<path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 01-10 0c0-2 1-3 2-4 .2 1.3.9 2 1.6 2.2C10.4 8.4 11 5.5 12 3z"/>',
+    reply: '<path d="M10 7L4 12l6 5v-3c5 0 8 1.2 10 5-.6-5.6-4-9-10-9.5V7z"/>',
+    down: '<path d="M12 4v11M7.5 11L12 15.5 16.5 11M5 19.5h14"/>',
+    mic: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0013 0M12 17.5V21"/>',
+    pen: '<path d="M4 20l4.5-1 10-10a2.1 2.1 0 00-3-3l-10 10L4 20z"/>',
+    undo: '<path d="M9 7L4 12l5 5M4.5 12H15a5 5 0 010 10h-3"/>',
+    shield: '<path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6l7-3z"/><path d="M9 12l2.2 2.2L15.5 10"/>',
+    check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+    back: '<path d="M15 5l-7 7 7 7"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>'
+  };
+  const svg = (n, s = 20) => {
+    const w = document.createElement('span');
+    w.className = 'ico';
+    w.innerHTML = '<svg viewBox="0 0 24 24" width="' + s + '" height="' + s + '" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICON[n] + '</svg>';
+    return w;
+  };
+  const h = (tag, props, ...kids) => {
+    const el = document.createElement(tag);
+    if (props) for (const [k, v] of Object.entries(props)) {
+      if (k === 'class') el.className = v;
+      else if (k === 'text') el.textContent = v;
+      else if (k === 'style') el.setAttribute('style', v);
+      else if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
+      else if (v === true) el.setAttribute(k, '');
+      else if (v !== false && v != null) el.setAttribute(k, v);
+    }
+    for (const kid of kids.flat()) if (kid != null && kid !== false) el.append(kid.nodeType ? kid : document.createTextNode(kid));
+    return el;
+  };
+
+  // <crypto>
+  const te = new TextEncoder(), td = new TextDecoder();
+  const b64 = u8 => { let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s); };
+  const unb64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+  const hex = u8 => [...u8].map(b => b.toString(16).padStart(2, '0')).join('');
+  // One secret code gives both the room id and the AES key, so the id reveals nothing about the key.
+  async function deriveRoom(code) {
+    const km = await crypto.subtle.importKey('raw', te.encode(code), 'PBKDF2', false, ['deriveBits']);
+    const bits = new Uint8Array(await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: te.encode('sargoshi/v2/room'), iterations: 150000 }, km, 384));
+    const key = await crypto.subtle.importKey('raw', bits.slice(16, 48), 'AES-GCM', false, ['encrypt', 'decrypt']);
+    return { id: 'r' + hex(bits.slice(0, 16)), key };
+  }
+  async function encBytes(key, u8) {
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, u8));
+    const out = new Uint8Array(12 + ct.length); out.set(iv); out.set(ct, 12);
+    return b64(out);
+  }
+  async function decBytes(key, s) {
+    const all = unb64(s);
+    return new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: all.slice(0, 12) }, key, all.slice(12)));
+  }
+  const encJson = (key, o) => encBytes(key, te.encode(JSON.stringify(o)));
+  const decJson = async (key, s) => JSON.parse(td.decode(await decBytes(key, s)));
+  // </crypto>
+
+  // <streak>
+  const dayKey = ts => new Date(ts).toLocaleDateString('en-CA');
+  // A day counts once both people have written. Missing a whole day resets the streak.
+  function streakNext(cur, me, now) {
+    const today = dayKey(now), yest = dayKey(now - 864e5);
+    let st = cur ? { count: cur.count || 0, day: cur.day || '', counted: !!cur.counted, seen: Object.assign({}, cur.seen || {}) } : { count: 0, day: '', counted: false, seen: {} };
+    if (st.day !== today) {
+      const carry = st.day === yest && st.counted;
+      st = { count: carry ? st.count : 0, day: today, counted: false, seen: {} };
+    }
+    st.seen[me] = true;
+    if (!st.counted && Object.keys(st.seen).length >= 2) { st.counted = true; st.count += 1; }
+    return st;
+  }
+  function streakShow(cur, now) {
+    if (!cur) return 0;
+    if (cur.day === dayKey(now)) return cur.count || 0;
+    if (cur.day === dayKey(now - 864e5) && cur.counted) return cur.count || 0;
+    return 0;
+  }
+  // </streak>
+
+  const EMOJI = ['❤️', '😂', '😮', '😢', '👍', '🔥'];
+  const S = {
+    db: null, user: null, me: null, rid: null, ck: null, msgs: [], members: [], names: {}, plain: new Map(),
+    once: false, pending: null, replyTo: null, viewing: null, unsubs: [], swept: new Set(), seen: new Set(),
+    loadTimer: null, seq: 0, locked: false, settings: { ttl: 0 }, streak: null, room: null, peers: [], chats: [], chat: null, editing: null,
+    dict: null, dl: null, roomNs: null, typing: false, typeT: null, lastActive: Date.now(), hiddenAt: 0
+  };
+  const base = () => 'rooms/' + S.rid;
+  const msgRef = id => S.db.doc(base() + '/messages/' + id);
+  const whoName = id => (id === (S.me && S.me.id) ? 'Tum' : (S.names[id] || 'Dost'));
+  const isGroup = () => S.members.length > 2;
+  const hm = ts => new Date(ts).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  const dayLabel = ts => {
+    const d = new Date(ts), t = new Date(), y = new Date(Date.now() - 864e5);
+    if (d.toDateString() === t.toDateString()) return 'Aaj';
+    if (d.toDateString() === y.toDateString()) return 'Kal';
+    return d.toLocaleDateString([], { day: 'numeric', month: 'short' });
+  };
+  const kindWord = m => (m.kind === 'photo' || m.orig === 'photo') ? 'photo' : 'message';
+  const ls = {
+    get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} },
+    del: k => { try { localStorage.removeItem(k); } catch (e) {} }
+  };
+
+  // writes to one message run one after another
+  const wq = new Map();
+  function qwrite(id, fn) {
+    const prev = wq.get(id) || Promise.resolve();
+    const p = prev.catch(() => {}).then(fn);
+    wq.set(id, p);
+    return p;
+  }
+  const upd = (id, data) => qwrite(id, () => msgRef(id).update(data));
+
+  /* ---------- preferences ---------- */
+  function setMe(v) { if (v === 'red') root.setAttribute('data-me', 'red'); else root.removeAttribute('data-me'); ls.set('sargoshi.me', v); }
+  function setWall(v) { if (v && v !== 'raat') root.setAttribute('data-wall', v); else root.removeAttribute('data-wall'); ls.set('sargoshi.wall', v); }
+  setMe(ls.get('sargoshi.me') || 'rose');
+  setWall(ls.get('sargoshi.wall') || 'raat');
+
+  /* ---------- small UI helpers ---------- */
+  let toastTimer;
+  function toast(t) {
+    const el = $('#toast'); el.textContent = t; el.hidden = false;
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.hidden = true; }, 2800);
+  }
+  function lockMsg(t, bad = true) { const el = $('#lockMsg'); el.textContent = t; el.classList.toggle('bad', !!t && bad); }
+  function show(which) { $('#lock').hidden = which !== 'lock'; $('#home').hidden = which !== 'home'; $('#chat').hidden = which !== 'chat'; }
+  function errText(e) {
+    const c = e && e.code;
+    if (c === 'permission-denied') return 'Permission nahi mili. Net check karo aur app dobara kholo.';
+    if (c === 'resource-exhausted') return 'Aaj ki free limit poori ho gayi. Thodi der baad try karo.';
+    if (c === 'unavailable') return 'Internet nahi mil raha. Net check karo.';
+    return 'Abhi nahi ho paaya. Thodi der me dobara try karo.';
+  }
+  function closeSheet() { $('#sheet').hidden = true; }
+  function openPanel(...nodes) { $('#sheet .sheet-panel').replaceChildren(...nodes.flat().filter(Boolean)); $('#sheet').hidden = false; }
+  function sheetItem(it) {
+    const b = h('button', { class: 'sheet-item' + (it.danger ? ' danger' : ''), type: 'button' }, it.icon ? svg(it.icon, 18) : null, h('span', { text: it.label }));
+    b.addEventListener('click', async () => { const keep = await it.run(b); if (keep !== false) closeSheet(); });
+    return b;
+  }
+  const cancelItem = () => h('button', { class: 'sheet-item cancel', type: 'button', text: 'Band karo', onclick: closeSheet });
+  $('#sheet').addEventListener('click', e => { if (e.target.id === 'sheet') closeSheet(); });
+  function longpress(el, fn) {
+    let t = null, x = 0, y = 0;
+    const flag = () => { el.dataset.lp = '1'; setTimeout(() => { delete el.dataset.lp; }, 700); };
+    el.addEventListener('pointerdown', e => { x = e.clientX; y = e.clientY; t = setTimeout(() => { t = null; flag(); fn(); }, 450); });
+    const stop = () => { clearTimeout(t); t = null; };
+    el.addEventListener('pointerup', stop); el.addEventListener('pointercancel', stop);
+    el.addEventListener('pointermove', e => { if (t && Math.hypot(e.clientX - x, e.clientY - y) > 8) stop(); });
+    el.addEventListener('contextmenu', e => { e.preventDefault(); stop(); flag(); fn(); });
+  }
+  function tapUnlessLong(el, fn) {
+    el.addEventListener('click', () => { if (el.dataset.lp) { delete el.dataset.lp; return; } fn(); });
+  }
+
+  /* ---------- static icons and legend ---------- */
+  $('#peek').append(svg('eye'));
+  $('#hideBtn').append(svg('eyeoff'));
+  $('#homeHide').append(svg('eyeoff'));
+  $('#homeMore').append(svg('more'));
+  $('#backBtn').append(svg('back'));
+  $('#moreBtn').append(svg('more'));
+  $('#photoBtn').append(svg('image'));
+  $('#camBtn').append(svg('camera'));
+  $('#micBtn').append(svg('mic'));
+  $('#sendBtn').append(svg('send', 22));
+  const legend = [
+    ['flame', 'Ek baar dekho', 'Khulte hi message ya photo gayab ho jaata hai.'],
+    ['save', 'Chat me save', 'Dekhne wala chahe to usse chat me rakh sakta hai.'],
+    ['shield', 'Encrypted', 'Message database me bhi code ke bina padhe nahi jaate.'],
+    ['eyeoff', 'Chhupao aur PIN', 'Ek tap me saadi list dikhti hai, PIN se lock bhi hota hai.']
+  ];
+  $('#legend').append(...legend.map(([i, t, s]) => h('li', null, svg(i, 18), h('div', null, h('b', { text: t }), h('span', { class: 's', text: s })))));
+  $('#peek').addEventListener('click', () => {
+    const i = $('#code'); const hidden = i.type === 'password';
+    i.type = hidden ? 'text' : 'password';
+    $('#peek').replaceChildren(svg(hidden ? 'eyeoff' : 'eye'));
+  });
+
+  /* ---------- chats on this phone ---------- */
+  const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const initial = n => (Array.from(n || '?')[0] || '?').toUpperCase();
+  function loadChats() {
+    try { const a = JSON.parse(ls.get('sargoshi.chats') || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; }
+  }
+  function saveChats() { ls.set('sargoshi.chats', JSON.stringify(S.chats)); }
+
+  function renderHome() {
+    const box = $('#chatList');
+    const list = S.chats.slice().sort((a, b) => (b.opened || 0) - (a.opened || 0));
+    if (!list.length) {
+      box.replaceChildren(h('div', { class: 'empty' }, h('b', { text: 'Abhi koi chat nahi.' }),
+        h('span', { text: 'Nayi chat banao. Ek secret code chuno aur wahi code dost ko batao. Teen ya zyada log ek hi code daalein to group ban jaata hai.' })));
+      return;
+    }
+    box.replaceChildren(...list.map(c => h('div', { class: 'crow' },
+      h('button', { class: 'copen', type: 'button', onclick: () => openEntry(c) },
+        h('span', { class: 'cav', text: initial(c.name) }),
+        h('span', { class: 'cinfo' }, h('b', { text: c.name || 'Chat' }), h('span', { text: c.code ? 'Encrypted · tap karke kholo' : 'Secret code daalna padega' }))),
+      h('button', { class: 'ib', type: 'button', 'aria-label': 'Chat options', onclick: () => chatMenu(c) }, svg('more')))));
+  }
+  function chatMenu(c) {
+    openPanel(
+      h('p', { class: 'sheet-title', text: c.name || 'Chat' }),
+      sheetItem({ label: 'Naam badlo', icon: 'pen', run: () => { renamePanel(c); return false; } }),
+      armBtn('Is phone se hatao', 'trash', () => removeChat(c, false), true),
+      armBtn('Chat chhodo aur hatao', 'out', () => removeChat(c, true), true),
+      h('p', { class: 'fine', text: 'Phone se hatane par baaki log chat me bane rehte hain. Chhodne par tum member list se bhi hat jaate ho.' }),
+      cancelItem());
+  }
+  function renamePanel(c) {
+    const inp = h('input', { class: 'txt', type: 'text', maxlength: '30', value: c.name || '', 'aria-label': 'Naya naam' });
+    const save = () => {
+      const n = inp.value.trim(); if (!n) return;
+      c.name = n; saveChats(); renderHome(); if (S.chat === c) renderHead(); closeSheet();
+    };
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') save(); });
+    openPanel(h('p', { class: 'sheet-title', text: 'Naya naam' }), inp, h('button', { class: 'btn grad wide', type: 'button', onclick: save }, 'Save karo'), cancelItem());
+    inp.focus();
+  }
+  async function removeChat(c, leave) {
+    if (leave && c.rid) { try { await S.db.doc('rooms/' + c.rid + '/members/' + S.me.id).delete(); } catch (e) {} }
+    S.chats = S.chats.filter(x => x.id !== c.id);
+    saveChats(); renderHome();
+  }
+  function openEntry(c) {
+    if (c.code) join({ entry: c, raw: c.code, remember: true });
+    else showNew(c);
+  }
+  function showNew(entry) {
+    S.editing = entry || null;
+    $('#chatName').value = entry ? (entry.name || '') : '';
+    $('#code').value = '';
+    $('#remember').checked = true;
+    $('#backHome').hidden = !S.chats.length;
+    $('#enter').disabled = !S.me;
+    lockMsg('', false);
+    show('lock');
+    (entry ? $('#code') : $('#chatName')).focus();
+  }
+  $('#newChat').prepend(svg('plus', 18));
+  $('#newChat').addEventListener('click', () => showNew(null));
+  $('#backHome').addEventListener('click', () => { renderHome(); show('home'); });
+  $('#homeMore').addEventListener('click', settingsPanel);
+  $('#backBtn').addEventListener('click', async () => { if (S.viewing) await closeViewer(); backToLock(''); });
+
+  /* ---------- boot and join ---------- */
+  const safeUse = async name => { try { return await window.claude.use(name); } catch (e) { return null; } };
+
+  async function boot() {
+    S.chats = loadChats();
+    const c = window.claude;
+    if (!c || typeof c.use !== 'function') { lockMsg('App load nahi hua. Internet check karke dobara kholo.'); return; }
+    if (!(window.crypto && crypto.subtle)) { lockMsg('Is browser me encryption nahi chalta. Chrome ya Safari ka naya version use karo.'); return; }
+    lockMsg('Jud raha hai…', false);
+    [S.db, S.user] = await Promise.all([safeUse('db'), safeUse('user')]);
+    if (!S.db || !S.user) { lockMsg('Server se judna nahi ho paaya. Internet check karke dobara kholo.'); return; }
+    S.me = await S.user.me();
+    if (!S.me.id) { lockMsg('Server se judna nahi ho paaya. Internet check karke dobara kholo.'); return; }
+    lockMsg('', false);
+    $('#enter').disabled = false;
+    safeUse('room').then(r => { S.roomNs = r; if (S.rid && !S.room) joinPresence(); });
+    safeUse('downloads').then(d => { S.dl = d; });
+    safeUse('dictation').then(d => { if (d) initDictation(d); });
+    const old = ls.get('sargoshi.code');
+    if (old && !S.chats.length) { S.chats.push({ id: newId(), name: 'Meri chat', code: old, rid: '', opened: Date.now() }); saveChats(); }
+    if (old) ls.del('sargoshi.code');
+    const goHome = () => { renderHome(); if (S.chats.length) show('home'); else showNew(null); setTimeout(askName, 600); };
+    if (hasPin() && S.chats.length) showPin('unlock', goHome); else goHome();
+  }
+
+  $('#lockForm').addEventListener('submit', e => {
+    e.preventDefault();
+    join({ entry: S.editing, name: $('#chatName').value.trim() || 'Chat', raw: $('#code').value, remember: $('#remember').checked });
+  });
+
+  async function join({ entry, name, raw, remember }) {
+    const code = (raw || '').trim().toLowerCase();
+    if (code.length < 4) { lockMsg('Code kam se kam 4 akshar ka rakho.'); return; }
+    const onLock = !$('#lock').hidden;
+    $('#enter').disabled = true;
+    if (onLock) lockMsg('Chat khul rahi hai…', false); else toast('Chat khul rahi hai…');
+    await new Promise(r => setTimeout(r, 30));
+    try {
+      const r = await deriveRoom(code);
+      const found = S.chats.find(c => c.rid === r.id);
+      let ent = found || entry;
+      if (!ent) { ent = { id: newId(), name: name || 'Chat', code: '', rid: '' }; S.chats.push(ent); }
+      else if (name && (!found || !entry || found.id === entry.id)) ent.name = name;
+      if (found && entry && found.id !== entry.id) toast('Yeh chat pehle se list me hai.');
+      ent.rid = r.id; ent.code = remember ? code : ''; ent.opened = Date.now();
+      saveChats();
+      S.chat = ent; S.rid = r.id; S.ck = r.key; S.editing = null;
+      const mref = S.db.doc(base() + '/members/' + S.me.id);
+      const snap = await mref.get();
+      if (!snap.exists) await mref.set({ joined: Date.now() });
+      lockMsg('', false);
+      show('chat');
+      S.lastActive = Date.now();
+      subscribe();
+      renderHead(); renderTray(); renderList();
+      joinPresence();
+    } catch (e) {
+      S.rid = null; S.ck = null; S.chat = null;
+      const msg = errText(e);
+      if (onLock) lockMsg(msg); else toast(msg);
+    }
+    $('#enter').disabled = false;
+  }
+
+  function askName() {
+    if (ls.get('sargoshi.named') || !S.me) return;
+    const inp = h('input', { class: 'txt', type: 'text', maxlength: '30', placeholder: 'Jaise: Ayush', 'aria-label': 'Tumhara naam', value: ls.get('sargoshi.myname') || '' });
+    const done = async skip => {
+      ls.set('sargoshi.named', '1');
+      const n = inp.value.trim();
+      if (!skip && n) { ls.set('sargoshi.myname', n); try { await S.db.doc('users/' + S.me.id).set({ name: n }); } catch (e) {} }
+      closeSheet();
+    };
+    openPanel(h('p', { class: 'sheet-title', text: 'Tumhara naam kya hai?' }), h('p', { class: 'fine', text: 'Group me dosto ko yahi naam dikhega.' }), inp,
+      h('button', { class: 'btn grad wide', type: 'button', onclick: () => done(false) }, 'Save karo'),
+      h('button', { class: 'sheet-item cancel', type: 'button', onclick: () => done(true) }, 'Baad me'));
+  }
+
+  async function loadNames(ids) {
+    if (!ids.length) return;
+    try {
+      const ps = await S.user.profiles(ids);
+      for (const id of ids) S.names[id] = (ps[id] && ps[id].name) || '';
+    } catch (e) {}
+  }
+
+  // decrypts one message once and keeps the result until the stored text changes
+  async function prepare(m) {
+    if (m.kind === 'gone' || !S.ck) return null;
+    const sig = [m.ct, m.im, m.rp].map(x => x ? x.slice(0, 24) + x.length : '').join('|');
+    const old = S.plain.get(m.id);
+    if (old && old.sig === sig) return old;
+    const p = { sig, t: '', imgUrl: '', blob: null, rp: null, err: false };
+    try {
+      if (m.ct) p.t = (await decJson(S.ck, m.ct)).t || '';
+      if (m.im) { p.blob = new Blob([await decBytes(S.ck, m.im)], { type: 'image/jpeg' }); p.imgUrl = URL.createObjectURL(p.blob); }
+      if (m.rp) p.rp = await decJson(S.ck, m.rp);
+    } catch (e) { p.err = true; }
+    if (old && old.imgUrl) URL.revokeObjectURL(old.imgUrl);
+    S.plain.set(m.id, p);
+    return p;
+  }
+  function clearPlain() { for (const p of S.plain.values()) if (p.imgUrl) URL.revokeObjectURL(p.imgUrl); S.plain.clear(); }
+  function pruneCache(ids) {
+    for (const [id, p] of S.plain) if (!ids.has(id)) { if (p.imgUrl) URL.revokeObjectURL(p.imgUrl); S.plain.delete(id); }
+  }
+  async function reprocess() {
+    await Promise.all(S.msgs.map(prepare));
+    renderList();
+  }
+
+  function subscribe() {
+    S.unsubs.forEach(u => { try { u(); } catch (e) {} });
+    S.unsubs = [];
+    clearTimeout(S.loadTimer);
+    S.loadTimer = setTimeout(() => { $('#loadNote').hidden = false; }, 10000);
+    const fail = e => {
+      if (e && e.code === 'revoked') { backToLock('Chat se judna nahi ho paaya. Dobara try karo.'); return; }
+      $('#loadNote').hidden = false;
+    };
+    S.unsubs.push(S.db.collection(base() + '/messages').orderBy('ts', 'desc').limit(150).onSnapshot(async snap => {
+      const seq = ++S.seq;
+      const msgs = snap.docs.map(d => Object.assign({ id: d.id }, d.data())).reverse();
+      if (!snap.metadata.fromCache) { clearTimeout(S.loadTimer); $('#loadNote').hidden = true; }
+      if (S.locked) { S.msgs = msgs; return; }
+      await Promise.all(msgs.map(prepare));
+      if (seq !== S.seq || S.locked) return;
+      S.msgs = msgs;
+      pruneCache(new Set(msgs.map(m => m.id)));
+      renderList();
+      housekeeping();
+    }, fail));
+    S.unsubs.push(S.db.collection(base() + '/members').onSnapshot(async snap => {
+      S.members = snap.docs.map(d => d.id);
+      await loadNames(S.members.filter(id => id !== S.me.id));
+      renderHead();
+      if (!S.locked) renderList();
+    }, fail));
+    S.unsubs.push(S.db.doc(base() + '/meta/streak').onSnapshot(snap => { S.streak = snap.exists ? snap.data() : null; renderHead(); }, fail));
+    S.unsubs.push(S.db.doc(base() + '/meta/settings').onSnapshot(snap => { S.settings = Object.assign({ ttl: 0 }, snap.exists ? snap.data() : {}); renderHead(); }, fail));
+  }
+
+  function backToLock(msg) {
+    S.unsubs.forEach(u => { try { u(); } catch (e) {} });
+    S.unsubs = [];
+    clearTimeout(S.loadTimer);
+    if (S.room) { S.room.leave().catch(() => {}); S.room = null; }
+    clearPlain();
+    S.rid = null; S.ck = null; S.chat = null; S.msgs = []; S.members = []; S.peers = []; S.pending = null; S.replyTo = null; S.once = false; S.locked = false; S.streak = null; S.settings = { ttl: 0 };
+    S.swept.clear(); S.seen.clear();
+    $('#pin').hidden = true; $('#viewer').hidden = true; $('#editor').hidden = true; closeSheet();
+    $('#list').replaceChildren(); $('#whoSub').textContent = '';
+    renderHome(); show('home');
+    if (msg) toast(msg);
+  }
+
+  /* ---------- presence and typing ---------- */
+  async function joinPresence() {
+    if (!S.roomNs || !S.rid || S.room) return;
+    try {
+      const r = await S.roomNs.join(S.rid);
+      if (!S.rid) { r.leave().catch(() => {}); return; }
+      S.room = r;
+      r.onPeers(ch => { S.peers = ch.peers; renderHead(); });
+      setPresence({ on: !document.hidden, typing: false });
+    } catch (e) { S.room = null; }
+  }
+  function setPresence(p) { if (S.room) S.room.presence(p).catch(() => {}); }
+  function setTyping(on) {
+    if (on) {
+      if (!S.typing) { S.typing = true; setPresence({ typing: true }); }
+      clearTimeout(S.typeT);
+      S.typeT = setTimeout(() => { S.typing = false; setPresence({ typing: false }); }, 2500);
+    } else if (S.typing) { S.typing = false; clearTimeout(S.typeT); setPresence({ typing: false }); }
+  }
+
+  /* ---------- rendering ---------- */
+  const ttlLabel = t => t >= 864e5 ? '24 ghante' : t >= 36e5 ? '1 ghanta' : '';
+  function renderHead() {
+    if (!S.me) return;
+    const others = S.members.filter(id => id !== S.me.id);
+    const group = isGroup();
+    const title = (S.chat && S.chat.name) || 'Chat';
+    $('#whoName').textContent = title;
+    $('#avatar').textContent = initial(title);
+    const live = S.peers.filter(p => !p.isMe && p.kind === 'viewer' && p.presence && p.presence.on === true);
+    const online = new Set(live.map(p => p.by || p.peer)).size;
+    const typers = live.filter(p => p.presence.typing === true);
+    const sub = $('#whoSub');
+    let t, on = false;
+    if (!others.length) t = 'Abhi koi aur nahi. Unhe yahi secret code do.';
+    else if (typers.length) { t = group ? typers.slice(0, 2).map(p => whoName(p.by)).join(', ') + ' typing…' : 'typing…'; on = true; }
+    else if (group) { t = S.members.length + ' log · ' + online + ' online'; on = online > 0; }
+    else if (online) { t = 'Online'; on = true; }
+    else t = 'Offline';
+    if (S.settings.ttl) t += ' · auto-delete ' + ttlLabel(S.settings.ttl);
+    sub.textContent = t; sub.className = on ? 'on' : '';
+    const n = group ? 0 : streakShow(S.streak, Date.now());
+    const st = $('#streak');
+    st.hidden = n < 1;
+    if (n >= 1) { st.replaceChildren(svg('flame', 15), String(n)); st.title = 'Streak: ' + n + ' din'; }
+    const b = $('#banner');
+    if (group) { b.textContent = 'Group chat: ' + S.members.length + ' log. Jis ke paas yahi secret code hai woh jud sakta hai.'; b.hidden = false; }
+    else b.hidden = true;
+  }
+
+  function renderTray() {
+    const tray = $('#tray');
+    tray.replaceChildren(h('button', { class: 'chip', type: 'button', 'aria-pressed': String(S.once), onclick: () => { S.once = !S.once; renderTray(); } },
+      svg(S.once ? 'flame' : 'save', 16), S.once ? 'Ek baar dekho' : 'Chat me rahe'));
+    if (S.pending) {
+      tray.append(h('div', { class: 'thumb' }, h('img', { src: S.pending.url, alt: 'Photo tayyar' }), h('span', { text: 'Photo tayyar' }),
+        h('button', { type: 'button', 'aria-label': 'Photo hatao', onclick: () => { URL.revokeObjectURL(S.pending.url); S.pending = null; renderTray(); } }, svg('close', 14))));
+    }
+    if (S.replyTo) {
+      tray.append(h('div', { class: 'replybar' }, svg('reply', 14), h('span', { text: (S.replyTo.t || 'Photo').slice(0, 60) }),
+        h('button', { type: 'button', 'aria-label': 'Reply hatao', onclick: () => { S.replyTo = null; renderTray(); } }, svg('close', 14))));
+    }
+  }
+
+  function emptyState() {
+    return h('div', { class: 'empty' },
+      h('b', { text: 'Yahan abhi kuch nahi.' }),
+      h('span', { text: 'Pehla message ya photo bhejo.' }),
+      h('ul', null,
+        h('li', null, h('strong', { text: 'Ek baar dekho: ' }), 'khulte hi gayab.'),
+        h('li', null, h('strong', { text: 'Chat me rahe: ' }), 'normal message, dono taraf dikhta hai.'),
+        h('li', null, h('strong', { text: 'Save: ' }), 'ek baar wale ko dekhne wala chat me rakh sakta hai.'),
+        h('li', null, h('strong', { text: 'Reply, reaction: ' }), 'message par tap ya dabaye rakho.')));
+  }
+
+  function renderList() {
+    if (S.locked || !S.me) return;
+    const list = $('#list');
+    const near = list.scrollHeight - list.scrollTop - list.clientHeight < 140;
+    list.replaceChildren();
+    const now = Date.now();
+    const vis = S.msgs.filter(m => !(m.exp && m.exp <= now && !(m.mode === 'once' && m.saved)));
+    if (!vis.length) { list.append(emptyState()); return; }
+    let lastSeenId = null;
+    if (!isGroup()) for (const m of vis) if (m.from === S.me.id && m.seen && m.kind !== 'gone') lastSeenId = m.id;
+    let lastDay = '';
+    for (const m of vis) {
+      const d = dayLabel(m.ts);
+      if (d !== lastDay) { list.append(h('div', { class: 'day', text: d })); lastDay = d; }
+      list.append(renderMsg(m, lastSeenId));
+    }
+    const last = vis[vis.length - 1];
+    if (near || last.from === S.me.id) list.scrollTop = list.scrollHeight;
+  }
+
+  function metaText(m, lastSeenId) {
+    let s = hm(m.ts);
+    if (m.mode === 'once' && m.saved) s += ' · ' + (m.savedBy === S.me.id ? 'tumne save kiya' : whoName(m.savedBy) + ' ne save kiya');
+    if (m.from === S.me.id && m.id === lastSeenId) s += ' · Dekha ' + hm(m.seen);
+    return s;
+  }
+
+  function renderMsg(m, lastSeenId) {
+    const mine = m.from === S.me.id;
+    if (m.kind === 'gone') {
+      const w = kindWord(m);
+      return h('div', { class: 'gone' }, svg('eye', 14), h('span', { text: mine ? 'Tumhara ' + w + ' dekha gaya, ab gayab' : 'Tumne ' + w + ' dekha, ab gayab' }), h('span', { text: hm(m.ts) }));
+    }
+    const p = S.plain.get(m.id) || { t: '', err: false };
+    const once = m.mode === 'once' && !m.saved;
+    const row = h('div', { class: 'row ' + (mine ? 'mine' : 'theirs'), 'data-id': m.id });
+    if (!mine && isGroup()) row.append(h('div', { class: 'sname', text: whoName(m.from) }));
+    row.append(once ? onceTile(m, mine) : bubble(m, p));
+    if (!once) {
+      const groups = {};
+      for (const e of Object.values(m.rx || {})) if (e) groups[e] = (groups[e] || 0) + 1;
+      const keys = Object.keys(groups);
+      if (keys.length) row.append(h('div', { class: 'rx' }, keys.map(e => h('button', { class: 'rxp' + ((m.rx || {})[S.me.id] === e ? ' mine' : ''), type: 'button', onclick: () => react(m, e) }, e + (groups[e] > 1 ? ' ' + groups[e] : '')))));
+    }
+    row.append(h('div', { class: 'meta', text: metaText(m, lastSeenId) }));
+    return row;
+  }
+
+  function onceTile(m, mine) {
+    const w = m.kind === 'photo' ? 'Photo' : 'Message';
+    if (!mine) {
+      return h('button', { class: 'tile live', type: 'button', onclick: () => openOnce(m) },
+        svg('flame', 18), h('div', null, h('b', { text: w + ' · ek baar' }), h('span', { class: 's', text: 'Tap karke dekho' })));
+    }
+    return h('div', { class: 'tile', role: 'button', tabindex: '0', onclick: () => retractSheet(m) },
+      svg('flame', 18), h('div', null, h('b', { text: w + ' · ek baar' }), h('span', { class: 's', text: m.openedBy ? 'Khul raha hai…' : 'Bheja. Abhi khula nahi' })));
+  }
+
+  function quoteEl(m, p) {
+    if (!p.rp) return null;
+    const snip = p.rp.t || (p.rp.k === 'photo' ? 'Photo' : '');
+    return h('button', { class: 'quote', type: 'button', onclick: e => { e.stopPropagation(); jumpTo(m.rid); } }, h('b', { text: whoName(m.rf) }), h('span', { text: snip }));
+  }
+
+  function bubble(m, p) {
+    if (p.err) return h('div', { class: 'bubble lockedmsg' }, svg('lock', 16), 'Yeh message khul nahi paaya');
+    let el;
+    if (m.kind === 'photo') {
+      el = h('button', { class: 'bubble photo', type: 'button', 'aria-label': 'Photo kholo' }, quoteEl(m, p), p.imgUrl ? h('img', { src: p.imgUrl, alt: 'Photo' }) : null, p.t ? h('span', { class: 'cap', text: p.t }) : null);
+      tapUnlessLong(el, () => openKeep(m));
+    } else {
+      el = h('div', { class: 'bubble', role: 'button', tabindex: '0' }, quoteEl(m, p), p.t);
+      tapUnlessLong(el, () => msgPanel(m, p));
+    }
+    longpress(el, () => msgPanel(m, p));
+    return el;
+  }
+
+  function jumpTo(id) {
+    const el = id && $('#list [data-id="' + id + '"]');
+    if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    else toast('Woh message ab nahi hai.');
+  }
+
+  function retractSheet(m) {
+    openPanel(h('p', { class: 'sheet-title', text: 'Abhi khula nahi' }), sheetItem({ label: 'Wapas lo (delete)', icon: 'trash', danger: true, run: () => removeMsg(m) }), cancelItem());
+  }
+  function msgPanel(m, p) {
+    const rxRow = h('div', { class: 'rxrow' }, EMOJI.map(e => h('button', { class: 'rxbtn', type: 'button', 'aria-label': 'Reaction ' + e, onclick: () => { closeSheet(); react(m, e); } }, e)));
+    const items = [
+      { label: 'Reply', icon: 'reply', run: () => { S.replyTo = { id: m.id, from: m.from, k: m.kind, t: (p.t || '').slice(0, 80) }; renderTray(); $('#msg').focus(); } },
+      p.t ? { label: 'Copy', icon: 'copy', run: async () => { try { await navigator.clipboard.writeText(p.t); toast('Copy ho gaya'); } catch (e) { toast('Copy nahi ho paaya'); } } } : null,
+      { label: 'Delete (dono taraf se)', icon: 'trash', danger: true, run: () => removeMsg(m) }
+    ].filter(Boolean);
+    openPanel(rxRow, items.map(sheetItem), cancelItem());
+  }
+  async function removeMsg(m) {
+    try { await qwrite(m.id, () => msgRef(m.id).delete()); } catch (e) { toast(errText(e)); }
+  }
+  async function react(m, e) {
+    const cur = (m.rx && m.rx[S.me.id]) || '';
+    try { await upd(m.id, { rx: { [S.me.id]: cur === e ? '' : e } }); } catch (err) { toast(errText(err)); }
+  }
+
+  /* ---------- sending ---------- */
+  async function sendNow() {
+    const input = $('#msg');
+    const text = input.value.trim();
+    const pend = S.pending, rep = S.replyTo;
+    if (!text && !pend) return;
+    const now = Date.now(), ttl = S.settings.ttl || 0;
+    const payload = { from: S.me.id, kind: pend ? 'photo' : 'text', mode: S.once ? 'once' : 'keep', ts: now, exp: ttl ? now + ttl : null, saved: false, openedBy: null, seen: null, rx: {} };
+    try {
+      if (text) payload.ct = await encJson(S.ck, { t: text });
+      if (pend) payload.im = await encBytes(S.ck, new Uint8Array(await pend.blob.arrayBuffer()));
+      if (rep) { payload.rid = rep.id; payload.rf = rep.from; payload.rp = await encJson(S.ck, { k: rep.k, t: rep.t }); }
+    } catch (e) { toast('Message encrypt nahi ho paaya.'); return; }
+    input.value = ''; input.style.height = 'auto';
+    S.pending = null; S.replyTo = null; renderTray(); setTyping(false);
+    try {
+      await S.db.collection(base() + '/messages').add(payload);
+      bumpStreak(now);
+    } catch (e) {
+      input.value = text; S.pending = pend; S.replyTo = rep; renderTray(); toast(errText(e));
+    }
+  }
+  function bumpStreak(now) {
+    if (isGroup()) return;
+    const next = streakNext(S.streak, S.me.id, now);
+    if (JSON.stringify(next) === JSON.stringify(S.streak)) return;
+    S.db.doc(base() + '/meta/streak').set(next).catch(() => {});
+  }
+  $('#sendBtn').addEventListener('click', sendNow);
+  const autosize = t => { t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 120) + 'px'; };
+  $('#msg').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendNow(); } });
+  $('#msg').addEventListener('input', e => { autosize(e.target); setTyping(!!e.target.value); });
+
+  $('#photoBtn').addEventListener('click', () => $('#pick').click());
+  $('#camBtn').addEventListener('click', () => $('#cam').click());
+  const onPicked = e => {
+    const f = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    const url = URL.createObjectURL(f);
+    const img = new Image();
+    img.onload = () => { URL.revokeObjectURL(url); openEditor(img); };
+    img.onerror = () => { URL.revokeObjectURL(url); toast('Yeh photo khul nahi paayi. Koi aur photo chuno.'); };
+    img.src = url;
+  };
+  $('#pick').addEventListener('change', onPicked);
+  $('#cam').addEventListener('change', onPicked);
+
+  /* ---------- dictation ---------- */
+  function initDictation(d) {
+    S.dict = d;
+    const mic = $('#micBtn'), ta = $('#msg');
+    mic.hidden = false;
+    d.onFinal(e => { ta.value = ta.value ? ta.value + e.text : e.text.trimStart(); autosize(ta); });
+    d.onPartial(e => { ta.placeholder = e.text || 'Message likho'; });
+    d.onState(e => { mic.classList.toggle('rec', e.state === 'listening' || e.state === 'starting'); if (e.state === 'idle') ta.placeholder = 'Message likho'; });
+    mic.addEventListener('click', () => {
+      if (d.active()) { d.stop().catch(() => {}); return; }
+      d.start().catch(err => { if (err && err.code !== 'stopped' && err.code !== 'dismissed') toast('Bolkar likhna abhi nahi chal raha.'); });
+    });
+  }
+
+  /* ---------- viewer: once and keep ---------- */
+  function fillViewer(m, mode) {
+    const v = $('#viewer');
+    const p = S.plain.get(m.id) || { t: '' };
+    const label = mode === 'once' ? (m.kind === 'photo' ? 'Photo' : 'Message') + ' · sirf ek baar' : 'Photo';
+    const body = h('div', { class: 'v-body' });
+    if (m.kind === 'photo') body.append(h('div', null, p.imgUrl ? h('img', { src: p.imgUrl, alt: 'Photo' }) : null, p.t ? h('div', { class: 'v-cap', text: p.t }) : null));
+    else body.append(h('div', { class: 'v-text', text: p.t }));
+    const actions = h('div', { class: 'v-actions' });
+    if (mode === 'once') {
+      const saveBtn = h('button', { class: 'btn grad', type: 'button', onclick: () => saveOnce(saveBtn) }, svg('save', 18), 'Chat me save karo');
+      actions.append(saveBtn);
+    } else {
+      if (S.dl && p.blob) actions.append(h('button', { class: 'btn grad', type: 'button', onclick: () => downloadPhoto(p) }, svg('down', 18), 'Phone me utaaro'));
+      actions.append(h('button', { class: 'btn ghost danger', type: 'button', style: 'border-color:var(--danger);color:var(--danger)', onclick: async () => { const id = m.id; await closeViewer(); await removeMsg({ id }); } }, svg('trash', 18), 'Delete (dono taraf se)'));
+    }
+    actions.append(h('button', { class: 'btn ghost', type: 'button', onclick: closeViewer }, 'Band karo'));
+    const top = h('div', { class: 'v-top' }, h('span', { text: label }), h('button', { class: 'ib', type: 'button', 'aria-label': 'Band karo', onclick: closeViewer }, svg('close')));
+    v.replaceChildren(top, mode === 'once' && m.kind === 'photo' ? h('div', { class: 'v-bar' }, h('i')) : null, body, actions);
+    v.hidden = false;
+  }
+  async function downloadPhoto(p) {
+    try { await S.dl.save({ filename: 'sargoshi-' + Date.now() + '.jpg', data: p.blob }); toast('Photo save ho gayi.'); }
+    catch (e) { if (!e || e.code !== 'declined') toast('Photo save nahi ho paayi.'); }
+  }
+  async function openOnce(m) {
+    if (S.viewing) return;
+    S.viewing = { id: m.id, msg: m, mode: 'once', saved: false, timer: null };
+    try { await upd(m.id, { openedBy: S.me.id, openedAt: Date.now() }); }
+    catch (e) { S.viewing = null; toast('Yeh ab available nahi hai.'); return; }
+    if (!S.viewing) return;
+    fillViewer(m, 'once');
+    if (m.kind === 'photo') S.viewing.timer = setTimeout(closeViewer, 12000);
+  }
+  function openKeep(m) {
+    if (S.viewing) return;
+    S.viewing = { id: m.id, msg: m, mode: 'keep', saved: true, timer: null };
+    fillViewer(m, 'keep');
+  }
+  async function saveOnce(btn) {
+    const v = S.viewing; if (!v || v.saved) return;
+    try {
+      await upd(v.id, { saved: true, savedBy: S.me.id, exp: null });
+      v.saved = true; clearTimeout(v.timer);
+      const bar = $('#viewer .v-bar'); if (bar) bar.remove();
+      btn.disabled = true; btn.replaceChildren(svg('check', 18), 'Chat me save ho gaya');
+    } catch (e) { toast(errText(e)); }
+  }
+  async function closeViewer() {
+    const v = S.viewing; if (!v) return;
+    S.viewing = null; clearTimeout(v.timer);
+    $('#viewer').hidden = true; $('#viewer').replaceChildren();
+    if (v.mode === 'once' && !v.saved) await wipe(v.msg);
+  }
+  // Replaces the whole message with a stub, so nothing of the content stays stored.
+  async function wipe(m) {
+    try {
+      await qwrite(m.id, () => msgRef(m.id).set({ from: m.from, kind: 'gone', orig: m.kind, mode: 'once', ts: m.ts, exp: Date.now() + 12 * 36e5, openedBy: S.me.id, openedAt: Date.now() }));
+    } catch (e) { /* already gone or no access */ }
+  }
+
+  // expired messages, leftovers of a view that never closed, and read marks
+  function housekeeping() {
+    if (!S.rid || S.locked) return;
+    const now = Date.now();
+    for (const m of S.msgs) {
+      if (S.swept.has(m.id)) continue;
+      if (m.exp && m.exp <= now && !(m.mode === 'once' && m.saved)) { S.swept.add(m.id); msgRef(m.id).delete().catch(() => {}); continue; }
+      if (m.kind !== 'gone' && m.mode === 'once' && !m.saved && m.from !== S.me.id && m.openedBy === S.me.id && !(S.viewing && S.viewing.id === m.id)) { S.swept.add(m.id); wipe(m); }
+    }
+    if (!document.hidden) {
+      for (const m of S.msgs) {
+        if (m.from !== S.me.id && m.kind !== 'gone' && !(m.mode === 'once' && !m.saved) && !m.seen && !S.seen.has(m.id)) {
+          S.seen.add(m.id); upd(m.id, { seen: Date.now() }).catch(() => {});
+        }
+      }
+    }
+  }
+  setInterval(() => {
+    if (!S.rid || S.locked) return;
+    const now = Date.now();
+    if (S.msgs.some(m => m.exp && m.exp <= now && !(m.mode === 'once' && m.saved))) { housekeeping(); renderList(); }
+    renderHead();
+  }, 15000);
+
+  /* ---------- photo editor ---------- */
+  const ED = { base: null, filt: null, w: 0, h: 0, ops: [], tool: 'draw', color: '#FF4D8D', sizeIdx: 1, filter: 'none', cur: null };
+  const ED_COLORS = ['#FFFFFF', '#FF4D8D', '#FF3B3B', '#FFB020', '#3DDC97', '#4C8DFF', '#111111'];
+  const ED_FILTERS = [['none', 'Asli'], ['mono', 'Kaala-safed'], ['warm', 'Garam'], ['cool', 'Thanda'], ['fade', 'Halka'], ['pop', 'Gehra']];
+  const edCv = $('#edCanvas'), edCtx = edCv.getContext('2d');
+
+  function openEditor(img) {
+    const k = Math.min(1, 1080 / Math.max(img.width, img.height));
+    ED.w = Math.max(1, Math.round(img.width * k)); ED.h = Math.max(1, Math.round(img.height * k));
+    const b = document.createElement('canvas'); b.width = ED.w; b.height = ED.h;
+    const x = b.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, ED.w, ED.h); x.drawImage(img, 0, 0, ED.w, ED.h);
+    ED.base = b; ED.filt = b; ED.ops = []; ED.filter = 'none'; ED.tool = 'draw'; ED.cur = null;
+    edCv.width = ED.w; edCv.height = ED.h;
+    renderEdTools();
+    drawEd(edCtx);
+    $('#editor').hidden = false;
+  }
+  function closeEditor() { $('#editor').hidden = true; ED.base = null; ED.filt = null; ED.ops = []; }
+  function applyFilter(name) {
+    ED.filter = name;
+    if (name === 'none') { ED.filt = ED.base; return; }
+    const c = document.createElement('canvas'); c.width = ED.w; c.height = ED.h;
+    const x = c.getContext('2d'); x.drawImage(ED.base, 0, 0);
+    const d = x.getImageData(0, 0, ED.w, ED.h), p = d.data;
+    const cl = v => v < 0 ? 0 : v > 255 ? 255 : v;
+    for (let i = 0; i < p.length; i += 4) {
+      let r = p[i], g = p[i + 1], b = p[i + 2];
+      if (name === 'mono') { const y = .3 * r + .59 * g + .11 * b; r = g = b = y; }
+      else if (name === 'warm') { r = r * 1.08 + 6; g = g * 1.02; b = b * .88; }
+      else if (name === 'cool') { r = r * .9; g = g * 1.0; b = b * 1.12 + 6; }
+      else if (name === 'fade') { r = r * .82 + 40; g = g * .82 + 40; b = b * .82 + 46; }
+      else if (name === 'pop') { const f = 1.28; r = (r - 128) * f + 128; g = (g - 128) * f + 128; b = (b - 128) * f + 128; const y = .3 * r + .59 * g + .11 * b; r = y + (r - y) * 1.25; g = y + (g - y) * 1.25; b = y + (b - y) * 1.25; }
+      p[i] = cl(r); p[i + 1] = cl(g); p[i + 2] = cl(b);
+    }
+    x.putImageData(d, 0, 0);
+    ED.filt = c;
+  }
+  function drawEd(ctx) {
+    ctx.drawImage(ED.filt, 0, 0);
+    for (const op of ED.ops) {
+      if (op.type === 'stroke') {
+        ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = op.color; ctx.lineWidth = op.size;
+        ctx.beginPath();
+        op.pts.forEach(([px, py], i) => { if (i) ctx.lineTo(px, py); else ctx.moveTo(px, py); });
+        if (op.pts.length === 1) ctx.lineTo(op.pts[0][0] + .1, op.pts[0][1]);
+        ctx.stroke();
+      } else {
+        ctx.font = '700 ' + op.size + 'px Sora, Manrope, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.lineJoin = 'round'; ctx.lineWidth = Math.max(2, op.size / 5); ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.fillStyle = op.color;
+        ctx.strokeText(op.t, op.x, op.y); ctx.fillText(op.t, op.x, op.y);
+      }
+    }
+  }
+  function renderEdTools() {
+    const tools = $('#edTools'), colors = $('#edColors'), filters = $('#edFilters');
+    tools.replaceChildren(
+      h('button', { class: 'chip', type: 'button', 'aria-pressed': String(ED.tool === 'draw'), onclick: () => { ED.tool = 'draw'; renderEdTools(); } }, svg('pen', 16), 'Banao'),
+      h('button', { class: 'chip', type: 'button', 'aria-pressed': String(ED.tool === 'text'), onclick: () => { ED.tool = 'text'; renderEdTools(); $('#edText').focus(); } }, 'Aa Likho'),
+      [['Patla', 0], ['Beech', 1], ['Mota', 2]].map(([l, i]) => h('button', { class: 'chip', type: 'button', 'aria-pressed': String(ED.sizeIdx === i), onclick: () => { ED.sizeIdx = i; renderEdTools(); } }, l)),
+      h('button', { class: 'chip', type: 'button', onclick: () => { ED.ops.pop(); drawEd(edCtx); } }, svg('undo', 16), 'Undo'));
+    colors.replaceChildren(...ED_COLORS.map(c => h('button', { class: 'sw', type: 'button', 'aria-label': 'Rang ' + c, 'aria-pressed': String(ED.color === c), style: 'background:' + c, onclick: () => { ED.color = c; renderEdTools(); } })));
+    filters.replaceChildren(...ED_FILTERS.map(([v, l]) => h('button', { class: 'chip', type: 'button', 'aria-pressed': String(ED.filter === v), onclick: () => { applyFilter(v); drawEd(edCtx); renderEdTools(); } }, l)));
+    $('#edTextRow').hidden = ED.tool !== 'text';
+  }
+  const edPoint = e => { const r = edCv.getBoundingClientRect(); return [(e.clientX - r.left) * edCv.width / r.width, (e.clientY - r.top) * edCv.height / r.height]; };
+  edCv.addEventListener('pointerdown', e => {
+    if (!ED.base) return;
+    const [x, y] = edPoint(e);
+    if (ED.tool === 'text') {
+      const t = $('#edText').value.trim();
+      if (!t) { $('#edText').focus(); return; }
+      ED.ops.push({ type: 'text', t, x, y, color: ED.color, size: Math.round(ED.w / 13) });
+      $('#edText').value = ''; drawEd(edCtx); return;
+    }
+    edCv.setPointerCapture(e.pointerId);
+    ED.cur = { type: 'stroke', color: ED.color, size: Math.max(3, Math.round(ED.w / [200, 110, 60][ED.sizeIdx])), pts: [[x, y]] };
+    ED.ops.push(ED.cur); drawEd(edCtx);
+  });
+  edCv.addEventListener('pointermove', e => { if (ED.cur) { ED.cur.pts.push(edPoint(e)); drawEd(edCtx); } });
+  const edEnd = () => { ED.cur = null; };
+  edCv.addEventListener('pointerup', edEnd); edCv.addEventListener('pointercancel', edEnd);
+  $('#edCancel').addEventListener('click', closeEditor);
+  $('#edDone').addEventListener('click', async () => {
+    try {
+      const blob = await exportJpeg();
+      if (S.pending) URL.revokeObjectURL(S.pending.url);
+      S.pending = { blob, url: URL.createObjectURL(blob) };
+      S.once = true; renderTray(); closeEditor();
+    } catch (e) { toast('Photo bahut badi hai. Koi chhoti photo chuno.'); }
+  });
+  // each photo has to fit inside one stored message
+  async function exportJpeg() {
+    const src = document.createElement('canvas'); src.width = ED.w; src.height = ED.h;
+    drawEd(src.getContext('2d'));
+    let max = Math.max(ED.w, ED.h), q = .78;
+    for (let i = 0; i < 10; i++) {
+      const k = Math.min(1, max / Math.max(ED.w, ED.h));
+      const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(ED.w * k)); c.height = Math.max(1, Math.round(ED.h * k));
+      c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
+      const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', q));
+      if (blob && blob.size <= 150000) return blob;
+      if (q > .5) q -= .1; else max *= .8;
+    }
+    throw new Error('too big');
+  }
+
+  /* ---------- PIN lock ---------- */
+  const PIN = { buf: '', mode: 'unlock', first: '', done: null, cancel: null };
+  const hasPin = () => !!ls.get('sargoshi.pin');
+  async function pinHash(pin, salt) {
+    const km = await crypto.subtle.importKey('raw', te.encode(pin), 'PBKDF2', false, ['deriveBits']);
+    return b64(new Uint8Array(await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations: 100000 }, km, 256)));
+  }
+  (function buildPad() {
+    const pad = $('#pinPad');
+    ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '<'].forEach(k => {
+      pad.append(k === '' ? h('button', { class: 'empty', type: 'button', tabindex: '-1', 'aria-hidden': 'true' }) : h('button', { type: 'button', 'aria-label': k === '<' ? 'Mitao' : k, onclick: () => pinKey(k) }, k === '<' ? svg('close', 20) : k));
+    });
+  })();
+  function drawPin(sub) {
+    const titles = { unlock: 'PIN daalo', set1: 'Naya PIN chuno', set2: 'PIN dobara daalo' };
+    $('#pinTitle').textContent = titles[PIN.mode];
+    $('#pinSub').textContent = sub || (PIN.mode === 'unlock' ? 'Chat lock hai.' : '4 ank ka PIN.');
+    drawDots();
+    const alt = $('#pinAlt');
+    alt.textContent = PIN.mode === 'unlock' ? 'PIN bhool gaye? Code se jao' : 'Rehne do';
+  }
+  function drawDots() { $('#pinDots').replaceChildren(...[0, 1, 2, 3].map(i => h('i', { class: i < PIN.buf.length ? 'f' : '' }))); }
+  function showPin(mode, done, cancel) {
+    PIN.mode = mode; PIN.buf = ''; PIN.first = ''; PIN.done = done; PIN.cancel = cancel || null;
+    drawPin();
+    $('#pin').hidden = false;
+  }
+  async function pinKey(d) {
+    if (d === '<') PIN.buf = PIN.buf.slice(0, -1);
+    else if (PIN.buf.length < 4) PIN.buf += d;
+    drawDots();
+    if (PIN.buf.length === 4) await pinSubmit();
+  }
+  async function pinSubmit() {
+    const v = PIN.buf; PIN.buf = '';
+    if (PIN.mode === 'set1') { PIN.first = v; PIN.mode = 'set2'; drawPin(); return; }
+    if (PIN.mode === 'set2') {
+      if (v !== PIN.first) { PIN.mode = 'set1'; PIN.first = ''; drawPin('PIN match nahi hua. Dobara.'); return; }
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      ls.set('sargoshi.pin', JSON.stringify({ s: b64(salt), h: await pinHash(v, salt) }));
+      $('#pin').hidden = true; toast('PIN lag gaya.');
+      if (PIN.done) PIN.done();
+      return;
+    }
+    try {
+      const o = JSON.parse(ls.get('sargoshi.pin'));
+      if (await pinHash(v, unb64(o.s)) === o.h) { $('#pin').hidden = true; if (PIN.done) PIN.done(); return; }
+    } catch (e) {}
+    const dots = $('#pinDots'); dots.classList.remove('shake'); void dots.offsetWidth; dots.classList.add('shake');
+    drawPin('Galat PIN. Dobara try karo.');
+  }
+  $('#pinAlt').addEventListener('click', () => {
+    if (PIN.mode === 'unlock') {
+      ls.del('sargoshi.pin'); ls.del('sargoshi.code');
+      S.chats.forEach(c => { c.code = ''; }); saveChats();
+      const msg = 'PIN hata diya. Chats kholne ke liye secret code dobara daalo.';
+      if (S.rid) backToLock(msg);
+      else { $('#pin').hidden = true; S.locked = false; renderHome(); if (S.chats.length) show('home'); else showNew(null); toast(msg); }
+    } else { $('#pin').hidden = true; if (PIN.cancel) PIN.cancel(); }
+  });
+  function lockNow() {
+    if (S.locked || !S.me || !hasPin()) return;
+    S.locked = true;
+    if (S.viewing) closeViewer();
+    closeSheet(); closeEditor();
+    $('#decoy').hidden = false;
+    $('#list').replaceChildren(); clearPlain();
+    setPresence({ on: false, typing: false });
+    showPin('unlock', async () => { S.locked = false; S.lastActive = Date.now(); await reprocess(); housekeeping(); setPresence({ on: !document.hidden }); });
+  }
+  ['pointerdown', 'keydown', 'scroll'].forEach(ev => document.addEventListener(ev, () => { S.lastActive = Date.now(); }, true));
+  setInterval(() => { if (S.me && !S.locked && Date.now() - S.lastActive > 120000) lockNow(); }, 5000);
+
+  /* ---------- settings, hide, leave ---------- */
+  function seg(label, options, current, onPick) {
+    return h('div', { class: 'grp' }, h('label', { text: label }),
+      h('div', { class: 'seg' }, options.map(([v, l]) => h('button', { type: 'button', 'aria-pressed': String(current === v), onclick: () => onPick(v) }, l))));
+  }
+  function armBtn(label, icon, fn, danger) {
+    let armed = false;
+    const b = h('button', { class: 'sheet-item' + (danger ? ' danger' : ''), type: 'button' }, svg(icon, 18), h('span', { text: label }));
+    b.addEventListener('click', async () => {
+      if (danger && !armed) { armed = true; b.lastChild.textContent = 'Pakka? Dobara tap karo'; return; }
+      closeSheet(); await fn();
+    });
+    return b;
+  }
+  const WALLS = [['raat', 'linear-gradient(135deg,#0A0B1A,#2A1040)'], ['neel', 'linear-gradient(135deg,#06141F,#0F4A5C)'], ['gulaab', 'linear-gradient(135deg,#1A0913,#6A1F44)'], ['saaf', '#0D0E1B']];
+  function settingsPanel() {
+    const wall = ls.get('sargoshi.wall') || 'raat';
+    const inChat = !!S.rid;
+    openPanel(
+      h('p', { class: 'sheet-title', text: 'Settings' }),
+      seg('Meri chat ka rang', [['rose', 'Gulaabi'], ['red', 'Laal']], ls.get('sargoshi.me') || 'rose', v => { setMe(v); settingsPanel(); }),
+      h('div', { class: 'grp' }, h('label', { text: 'Wallpaper' }),
+        h('div', { class: 'walls' }, WALLS.map(([v, bg]) => h('button', { class: 'wallsw', type: 'button', 'aria-label': 'Wallpaper ' + v, 'aria-pressed': String(wall === v), style: 'background:' + bg, onclick: () => { setWall(v); settingsPanel(); } })))),
+      inChat ? seg('Auto-delete (is chat ke sab log)', [[0, 'Band'], [36e5, '1 ghanta'], [864e5, '24 ghante']], S.settings.ttl || 0, async v => {
+        try { await S.db.doc(base() + '/meta/settings').set({ ttl: v }); S.settings = { ttl: v }; renderHead(); } catch (e) { toast(errText(e)); }
+        settingsPanel();
+      }) : null,
+      inChat ? h('p', { class: 'fine', text: 'Auto-delete sirf naye messages par lagta hai. Chat me save kiye hue message bache rehte hain.' }) : null,
+      hasPin()
+        ? sheetItem({ label: 'PIN lock hatao', icon: 'lock', run: () => { ls.del('sargoshi.pin'); toast('PIN hat gaya.'); } })
+        : sheetItem({ label: 'PIN lock lagao', icon: 'lock', run: () => { showPin('set1', null, null); } }),
+      sheetItem({ label: 'Mera naam badlo', icon: 'pen', run: () => { ls.del('sargoshi.named'); askName(); return false; } }),
+      inChat ? sheetItem({ label: 'Chat ka naam badlo', icon: 'pen', run: () => { renamePanel(S.chat); return false; } }) : null,
+      inChat ? armBtn('Chat saaf karo (saved ko chhodkar)', 'trash', clearChat, true) : null,
+      inChat ? armBtn('Chat chhodo', 'out', leaveRoom, true) : null,
+      h('p', { class: 'fine', text: 'Messages aur photo AES-256 se encrypt hote hain. Secret code kisi ko mat batao.' }),
+      cancelItem());
+  }
+  $('#moreBtn').addEventListener('click', settingsPanel);
+  async function clearChat() {
+    const targets = S.msgs.filter(m => !(m.mode === 'once' && m.saved));
+    let failed = false;
+    for (const m of targets) { try { await qwrite(m.id, () => msgRef(m.id).delete()); } catch (e) { failed = true; } }
+    toast(failed ? 'Kuch message hat nahi paaye.' : 'Chat saaf ho gayi.');
+  }
+  async function leaveRoom() {
+    if (S.viewing) await closeViewer();
+    const c = S.chat;
+    try { await S.db.doc(base() + '/members/' + S.me.id).delete(); } catch (e) {}
+    if (c) { S.chats = S.chats.filter(x => x.id !== c.id); saveChats(); }
+    backToLock('Chat chhod di.');
+  }
+
+  // <sudoku>
+  function sdSolve(grid, limit) {
+    const g = grid.slice();
+    const rows = new Array(9).fill(0), cols = new Array(9).fill(0), boxes = new Array(9).fill(0);
+    for (let i = 0; i < 81; i++) if (g[i]) { const b = 1 << g[i], r = (i / 9) | 0, c = i % 9; rows[r] |= b; cols[c] |= b; boxes[((r / 3) | 0) * 3 + ((c / 3) | 0)] |= b; }
+    let count = 0, sol = null;
+    const rec = () => {
+      let best = -1, bestMask = 0, bestN = 10;
+      for (let i = 0; i < 81; i++) if (!g[i]) {
+        const r = (i / 9) | 0, c = i % 9, bx = ((r / 3) | 0) * 3 + ((c / 3) | 0);
+        const avail = ~(rows[r] | cols[c] | boxes[bx]) & 0x3FE;
+        let n = 0; for (let m = avail; m; m &= m - 1) n++;
+        if (n < bestN) { bestN = n; best = i; bestMask = avail; if (n <= 1) break; }
+      }
+      if (best < 0) { count++; if (!sol) sol = g.slice(); return count >= limit; }
+      if (bestN === 0) return false;
+      const r = (best / 9) | 0, c = best % 9, bx = ((r / 3) | 0) * 3 + ((c / 3) | 0);
+      for (let d = 1; d <= 9; d++) {
+        const b = 1 << d; if (!(bestMask & b)) continue;
+        g[best] = d; rows[r] |= b; cols[c] |= b; boxes[bx] |= b;
+        const stop = rec();
+        g[best] = 0; rows[r] &= ~b; cols[c] &= ~b; boxes[bx] &= ~b;
+        if (stop) return true;
+      }
+      return false;
+    };
+    rec();
+    return { count, sol };
+  }
+  function shuffled(a) { const b = a.slice(); for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = b[i]; b[i] = b[j]; b[j] = t; } return b; }
+  // every puzzle has exactly one solution
+  function sdMake(clues) {
+    const g = new Array(81).fill(0);
+    for (let b = 0; b < 3; b++) { const d = shuffled([1, 2, 3, 4, 5, 6, 7, 8, 9]); for (let k = 0; k < 9; k++) g[(b * 3 + ((k / 3) | 0)) * 9 + b * 3 + (k % 3)] = d[k]; }
+    const full = sdSolve(g, 1).sol;
+    const puz = full.slice();
+    let have = 81;
+    for (const i of shuffled(Array.from({ length: 81 }, (_, k) => k))) {
+      if (have <= clues) break;
+      const keep = puz[i]; puz[i] = 0;
+      if (sdSolve(puz, 2).count !== 1) puz[i] = keep; else have--;
+    }
+    return { puz, sol: full };
+  }
+  // </sudoku>
+
+  const SD = { puz: [], sol: [], cur: [], sel: -1, lvl: 'easy', t0: 0, done: false };
+  const SD_CLUES = { easy: 42, medium: 34, hard: 28 };
+  function sdNew(lvl) {
+    if (lvl) SD.lvl = lvl;
+    const r = sdMake(SD_CLUES[SD.lvl]);
+    SD.puz = r.puz; SD.sol = r.sol; SD.cur = r.puz.slice(); SD.sel = -1; SD.done = false; SD.t0 = Date.now();
+    $('#sdMsg').textContent = '';
+    sdDraw();
+  }
+  function sdConflicts() {
+    const bad = new Set();
+    for (let i = 0; i < 81; i++) {
+      const v = SD.cur[i]; if (!v) continue;
+      const r = (i / 9) | 0, c = i % 9;
+      for (let j = 0; j < 81; j++) {
+        if (j === i || SD.cur[j] !== v) continue;
+        const r2 = (j / 9) | 0, c2 = j % 9;
+        if (r === r2 || c === c2 || (((r / 3) | 0) === ((r2 / 3) | 0) && ((c / 3) | 0) === ((c2 / 3) | 0))) { if (!SD.puz[i]) bad.add(i); if (!SD.puz[j]) bad.add(j); break; }
+      }
+    }
+    return bad;
+  }
+  function sdDraw() {
+    $('#sdLvls').replaceChildren(...[['easy', 'Aasaan'], ['medium', 'Beech'], ['hard', 'Mushkil']].map(([v, l]) => h('button', { type: 'button', 'aria-pressed': String(SD.lvl === v), onclick: () => sdNew(v) }, l)));
+    const bad = sdConflicts();
+    const has = SD.sel >= 0;
+    const sv = has ? SD.cur[SD.sel] : 0, sr = has ? (SD.sel / 9) | 0 : -1, sc = has ? SD.sel % 9 : -1;
+    $('#sdGrid').replaceChildren(...SD.cur.map((v, i) => {
+      const r = (i / 9) | 0, c = i % 9;
+      let cls = 'sd-cell' + (SD.puz[i] ? ' g' : '') + (c % 3 === 2 && c < 8 ? ' c3' : '') + (r % 3 === 2 && r < 8 ? ' r3' : '');
+      if (has) {
+        if (i === SD.sel) cls += ' sel';
+        else if (v && v === sv) cls += ' same';
+        else if (r === sr || c === sc || (((r / 3) | 0) === ((sr / 3) | 0) && ((c / 3) | 0) === ((sc / 3) | 0))) cls += ' rel';
+      }
+      if (bad.has(i)) cls += ' bad';
+      return h('button', { class: cls, type: 'button', 'aria-label': 'Khana ' + (r + 1) + ', ' + (c + 1), onclick: () => { SD.sel = i; sdDraw(); } }, v ? String(v) : '');
+    }));
+    const cnt = new Array(10).fill(0); SD.cur.forEach(v => { if (v) cnt[v]++; });
+    $('#sdPad').replaceChildren(...[1, 2, 3, 4, 5, 6, 7, 8, 9].map(d => h('button', { type: 'button', disabled: cnt[d] >= 9, onclick: () => sdPut(d) }, String(d))));
+  }
+  function sdPut(d) {
+    if (SD.sel < 0 || SD.puz[SD.sel] || SD.done) return;
+    SD.cur[SD.sel] = d; sdAfter();
+  }
+  function sdAfter() {
+    sdDraw();
+    if (SD.cur.every((v, i) => v === SD.sol[i])) {
+      SD.done = true;
+      const s = Math.floor((Date.now() - SD.t0) / 1000);
+      $('#sdMsg').textContent = 'Shabaash! Sudoku ' + Math.floor(s / 60) + ' min ' + (s % 60) + ' sec me poora hua.';
+    }
+  }
+  function sdErase() { if (SD.sel >= 0 && !SD.puz[SD.sel] && !SD.done) { SD.cur[SD.sel] = 0; sdAfter(); } }
+  $('#sdErase').addEventListener('click', sdErase);
+  $('#sdHint').addEventListener('click', () => {
+    if (SD.sel < 0 || SD.puz[SD.sel] || SD.done) { $('#sdMsg').textContent = 'Pehle koi khaali khana chuno.'; return; }
+    SD.cur[SD.sel] = SD.sol[SD.sel]; sdAfter();
+  });
+  $('#sdCheck').addEventListener('click', () => {
+    const wrong = SD.cur.filter((v, i) => v && v !== SD.sol[i]).length;
+    $('#sdMsg').textContent = wrong ? wrong + ' khane galat hain.' : 'Ab tak sab sahi hai.';
+  });
+  $('#sdNew').addEventListener('click', () => sdNew());
+  setInterval(() => {
+    if ($('#decoy').hidden || SD.done) return;
+    const s = Math.floor((Date.now() - SD.t0) / 1000);
+    $('#sdTime').textContent = String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+  }, 1000);
+  document.addEventListener('keydown', e => {
+    if ($('#decoy').hidden) return;
+    if (e.key >= '1' && e.key <= '9') sdPut(+e.key);
+    else if (e.key === 'Backspace' || e.key === 'Delete') sdErase();
+  });
+  function openDecoy() {
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    if (!SD.puz.length) sdNew('easy');
+    $('#decoy').hidden = false;
+  }
+  $('#hideBtn').addEventListener('click', openDecoy);
+  $('#homeHide').addEventListener('click', openDecoy);
+  let taps = [];
+  $('#decoyTitle').addEventListener('click', () => {
+    const now = Date.now(); taps = taps.filter(t => now - t < 900); taps.push(now);
+    if (taps.length >= 3) { taps = []; $('#decoy').hidden = true; }
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    const hid = document.hidden;
+    document.body.classList.toggle('veil', hid);
+    if (hid) {
+      S.hiddenAt = Date.now();
+      if (S.viewing && S.viewing.mode === 'once') closeViewer();
+      setPresence({ on: false, typing: false });
+    } else {
+      if (S.hiddenAt && Date.now() - S.hiddenAt > 30000) lockNow();
+      S.hiddenAt = 0;
+      if (!S.locked) { setPresence({ on: true }); housekeeping(); }
+    }
+  });
+
+  sdNew('easy');
+  boot();
+})();
+</script>
+
+</body></html>
